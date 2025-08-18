@@ -7,7 +7,10 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sarabun: ['"Sarabun"', 'sans-serif'],
+        notoSerifThai: ['"Noto Serif Thai"', 'serif'],
+      },
+      backgroundImage: {
+        'custom-gradient': 'linear-gradient(256.58deg, #F4EFFF 16.38%, #FAFDFF 48.42%, #E2EDFC 82.46%, #D7E7FF 103.63%)',
       },
     },
   },

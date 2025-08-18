@@ -1,0 +1,12 @@
+DirectoryIndex index.html
+Options -Indexes
+
+# สำหรับ Vue SPA ที่ใช้ history mode (optional ถ้าใช้ history mode)
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /education/
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . /education/index.html [L]
+</IfModule>
