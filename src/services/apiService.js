@@ -150,6 +150,9 @@ export const getEducationPaginated = (page = 1, limit, filters = {}) => {
 export const getEducationById = (id) =>
   apiClient.get(`/education/curriculums/${id}`);
 
+export const getCurriculumsListAll = () =>
+  apiClient.get("/education/curriculumsListAll");
+
 export const addEducation = (data) =>
   apiClient.post("/education/curriculum", data);
 
@@ -185,6 +188,8 @@ export const getallYears = () =>
 export const provinceList = () => apiClient.get("/locations/provinces");
 
 export const countryList = () => apiClient.get("/locations/countries");
+
+export const getTypes = () => apiClient.get("/education/types");
 
 // Export default API client for other uses
 export default apiClient;
