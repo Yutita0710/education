@@ -1,10 +1,10 @@
 <template>
   <div
     v-if="showModal"
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 text-gray-700"
+    class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 text-gray-700"
   >
     <div
-      class="bg-white rounded-2xl max-w-7xl w-full max-h-[90vh] overflow-auto p-6 relative"
+      class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-4xl relative overflow-y-auto max-h-[90vh]"
       @click.stop
     >
       <!-- Close button -->
@@ -182,7 +182,7 @@ import { reactive, ref, watch } from "vue";
 import Swal from "sweetalert2";
 import {
   updateEducation,
-  getColleges,
+  getCollegesPaginated,
   getDegrees,
 } from "@/services/apiService";
 import vSelect from "vue-select";
@@ -340,7 +340,7 @@ async function updateCurriculum() {
 // Fetch colleges
 async function fetchColleges() {
   try {
-    const res = await getColleges();
+    const res = await getCollegesPaginated();
     colleges.value = res.data?.data || [];
 
     // ถ้าต้องการจัดเรียง (ตัวอย่างเรียงตาม id)

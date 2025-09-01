@@ -1,86 +1,95 @@
 <template>
-  <div
-    v-for="group in paginatedGroups"
-    :key="group.degree.id"
-    class="px-4 sm:px-8 md:px-4 lg:px-4 xl:px-20 text-gray-700"
-  >
-    <!-- หัวข้อแต่ละกลุ่ม -->
-    <h2 class="text-lg font-bold mb-3">
-      {{ group.degree.name }} ({{ group.total }} หลักสูตร)
-    </h2>
-
+  <div class="text-[#707781]">
+    <div class="mb-2 flex justify-start">
+      <p class="text-lg font-bold mb-3 sm:mb-0">
+        จำนวน
+        {{
+          Number(
+            props.total ?? props.meta?.total ?? props.curriculums?.length ?? 0
+          ).toLocaleString("th-TH-u-nu-latn")
+        }}
+        หลักสูตร
+      </p>
+    </div>
     <!-- ตาราง (Responsive) -->
-    <div class="overflow-x-auto">
+    <div
+      class="overflow-x-auto md:overflow-x-hidden border border-gray-300 rounded-lg"
+    >
       <table
         class="w-full font-bold border-collapse border border-[gray-300] sm:text-base font-bold"
       >
         <thead>
-          <tr class="bg-[#F0F5F9]">
-            <th class="border px-2 py-[1rem]  font-bold whitespace-nowrap w-[60px]">ลำดับ</th>
-            <th class="border px-2 py-[1rem]  font-bold whitespace-nowrap w-[400px]">
+          <tr class="bg-[#E2EDFC]">
+            <th class="border px-2 py-[0.7rem] font-bold">ลำดับ</th>
+            <th class="border px-2 py-[0.7rem] font-bold">
               ชื่อสถาบันการศึกษา
             </th>
-            <th class="border px-2 py-[1rem]  font-bold whitespace-nowrap w-[300px]">
-              ชื่อหลักสูตร
-            </th>
-            <th class="border px-2 py-[1rem]  font-bold whitespace-nowrap w-[200px]">
-              หลักสูตร
-            </th>
-            <th class="border px-2 py-[1rem]  font-bold whitespace-nowrap w-[100px]">
-              ปีเริ่มต้น
-            </th>
-            <th class="border px-2 py-[1rem]  font-bold whitespace-nowrap w-[100px]">
-              ปีสิ้นสุด
-            </th>
-            <th
-              v-if="isAdmin"
-              class="border px-2 py-[1rem]  font-bold whitespace-nowrap w-[100px]"
-            >
+            <th class="border px-2 py-[0.7rem] font-bold">ชื่อหลักสูตร</th>
+            <th class="border px-2 py-[0.7rem] font-bold">หลักสูตร</th>
+            <th class="border px-2 py-[0.7rem] font-bold">ระดับการศึกษา</th>
+            <th class="border px-2 py-[0.7rem] font-bold">หลักสูตรสำหรับ</th>
+            <th class="border px-2 py-[0.7rem] font-bold">ปีเริ่มต้น</th>
+            <th class="border px-2 py-[0.7rem] font-bold">ปีสิ้นสุด</th>
+            <th class="border px-2 py-[0.7rem] font-bold">รายละเอียด</th>
+            <th v-if="isAdmin" class="border px-2 py-[0.7rem] font-bold">
               สถานะ
             </th>
-            <th class="border px-2 py-[1rem]  font-bold w-[100px]">รายละเอียด</th>
             <th
               v-if="isAdmin"
-              class="border px-2 py-[1rem]  font-bold font-bold whitespace-nowrap w-[100px]"
+              class="border px-2 py-[0.7rem] font-bold font-bold"
             >
-              แก้ไข
+              จัดการ
             </th>
           </tr>
         </thead>
         <tbody>
           <tr
-            v-for="(item, index) in group.paginatedItems"
+            v-for="(item, index) in props.curriculums"
             :key="item.id"
             class="hover:bg-gray-50 text-gray-600"
           >
+            <!-- ลำดับ -->
             <td class="border px-2 py-1 text-center">
-              {{ index + 1 + (currentPages[group.degree.id] - 1) * limit }}
+              {{ meta.per_page * (meta.current_page - 1) + index + 1 }}
             </td>
-            <td class="border px-2 py-1 whitespace-normal break-words">
-              {{ item.college.name }}
-              <template v-if="isAdmin">
-                <span
-                  v-if="item.college.active === 1"
-                  class="bg-[#09C97F1A] text-[#09C97F] text-xs font-semibold px-2.5 py-0.5 rounded-full"
-                >
-                  Active
-                </span>
-                <span
-                  v-else
-                  class="bg-[#FB977D1A] text-[#FB977D] text-xs font-semibold px-2.5 py-0.5 rounded-full"
-                >
-                  Inactive
-                </span>
-              </template>
+
+            <!-- ชื่อสถาบันการศึกษา -->
+            <td class="border px-2 py-1">
+              {{ item.college?.name || "" }}
             </td>
-            <td class="border px-2 py-1 whitespace-normal break-words">
+
+            <!-- ชื่อหลักสูตร -->
+            <td class="border px-2 py-1">
               {{ item.name }}
             </td>
-            <td class="border px-2 py-1 whitespace-normal break-words">
-              {{ item.description }}
+
+            <!-- คำอธิบายหลักสูตร -->
+            <td class="border px-2 py-1">
+              {{ item.description || "" }}
             </td>
-            <td class="border px-2 py-1 text-center">{{ item.start_year }}</td>
-            <td class="border px-2 py-1 text-center">{{ item.end_year }}</td>
+
+            <!-- ระดับการศึกษา -->
+            <td class="border px-2 py-1 text-center">
+              {{ item.degree?.name }}
+            </td>
+
+            <!-- สําหรับสมาชิก -->
+            <td class="border px-2 py-1 text-center">
+              <!-- {{ item.type}} -->
+            </td>
+            <!-- ปีเริ่มต้น -->
+            <td class="border px-2 py-1 text-center">
+              {{ item.start_year || "" }}
+            </td>
+
+            <!-- ปีสิ้นสุด -->
+            <td class="border px-2 py-1 text-center">
+              {{ item.end_year || "" }}
+            </td>
+
+            <td class="border px-2 py-1">{{ item.remark }}</td>
+
+            <!-- สถานะ (admin เท่านั้น) -->
             <td
               v-if="isAdmin"
               class="border px-2 py-1 text-center items-center"
@@ -100,7 +109,6 @@
                 </a>
               </div>
             </td>
-            <td class="border px-2 py-1 truncate">{{ item.remark }}</td>
 
             <td
               v-if="isAdmin"
@@ -155,109 +163,6 @@
         </tbody>
       </table>
     </div>
-
-    <!-- Pagination -->
-    <div
-      class="flex flex-col sm:flex-row sm:items-center sm:justify-between border-t border-gray-200 bg-white px-4 py-3 mt-3 gap-3"
-    >
-      <!-- ข้อความ -->
-      <div class="text-gray-700 text-center sm:text-left">
-        Showing
-        <span class="font-medium">{{ startIndex(group.degree.id) + 1 }}</span>
-        to
-        <span class="font-medium">{{ endIndex(group.degree.id) }}</span>
-        of
-        <span class="font-medium">{{ group.total }}</span>
-        results
-      </div>
-
-      <!-- ปุ่ม -->
-      <nav
-        class="isolate inline-flex -space-x-px rounded-md shadow-sm mx-auto sm:mx-0"
-        aria-label="Pagination"
-      >
-        <!-- ไปหน้าแรก -->
-        <button
-          @click="changePage(group.degree.id, 1)"
-          :disabled="currentPages[group.degree.id] === 1"
-          class="px-3 py-1 border rounded-l disabled:opacity-50"
-        >
-          «
-        </button>
-
-        <!-- ก่อนหน้า -->
-        <button
-          @click="
-            changePage(group.degree.id, currentPages[group.degree.id] - 1)
-          "
-          :disabled="currentPages[group.degree.id] === 1"
-          class="px-3 py-1 border disabled:opacity-50"
-        >
-          ‹
-        </button>
-
-        <!-- ถ้าหน้าปัจจุบันเกิน 3 ให้แสดง 1 + ... -->
-        <template v-if="startPage(group.degree.id) > 1">
-          <button
-            class="px-3 py-1 border"
-            @click="changePage(group.degree.id, 1)"
-          >
-            1
-          </button>
-          <span class="px-3 py-1 border hidden sm:inline">...</span>
-        </template>
-
-        <!-- Page numbers -->
-        <button
-          v-for="page in visiblePages(group.degree.id)"
-          :key="page"
-          @click="changePage(group.degree.id, page)"
-          :class="[
-            'px-3 py-1 border',
-            page === currentPages[group.degree.id]
-              ? 'bg-[#0085db] text-white'
-              : 'bg-white text-gray-800',
-          ]"
-        >
-          {{ page }}
-        </button>
-
-        <!-- ถ้าหน้าสุดท้ายไม่อยู่ในช่วง แสดง ... + หน้าสุดท้าย -->
-        <template v-if="endPage(group.degree.id) < totalPages[group.degree.id]">
-          <span class="px-3 py-1 border hidden sm:inline">...</span>
-          <button
-            class="px-3 py-1 border"
-            @click="changePage(group.degree.id, totalPages[group.degree.id])"
-          >
-            {{ totalPages[group.degree.id] }}
-          </button>
-        </template>
-
-        <!-- ถัดไป -->
-        <button
-          @click="
-            changePage(group.degree.id, currentPages[group.degree.id] + 1)
-          "
-          :disabled="
-            currentPages[group.degree.id] === totalPages[group.degree.id]
-          "
-          class="px-3 py-1 border disabled:opacity-50"
-        >
-          ›
-        </button>
-
-        <!-- ไปหน้าสุดท้าย -->
-        <button
-          @click="changePage(group.degree.id, totalPages[group.degree.id])"
-          :disabled="
-            currentPages[group.degree.id] === totalPages[group.degree.id]
-          "
-          class="px-3 py-1 border rounded-r disabled:opacity-50"
-        >
-          »
-        </button>
-      </nav>
-    </div>
   </div>
 
   <EditCurriculumModal
@@ -271,125 +176,28 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from "vue";
+import { ref, computed } from "vue";
 import Swal from "sweetalert2";
 import EditCurriculumModal from "./EditCurriculumModal.vue";
 import { updateEducation } from "@/services/apiService";
 
-// ตรวจสอบว่าเป็น admin หรือไม่
 const isAdmin = localStorage.getItem("token") ? true : false;
-
+// ✅ ประกาศ emits ให้ครบ
+const emit = defineEmits(["refreshData", "edit"]);
 const props = defineProps({
-  data: {
-    type: Array,
-    default: () => [],
-  },
-  limit: {
-    type: Number,
-    default: 10,
-  },
+  curriculums: { type: Array, required: true },
+  meta: { type: Object, required: true },
+  isAdmin: { type: Boolean, default: false },
+  total: { type: Number, default: 0 },
 });
 
-// เพิ่ม emit สำหรับแจ้ง parent component
-const emit = defineEmits(["refreshData", "dataUpdated"]);
-const limit = props.limit;
-const currentPages = ref({});
+// ------ Modal (ถ้าให้ DataTable จัดการโมดอลเอง) ------
 const isUpdating = ref(false);
-
-// อัปเดต currentPages ทุกครั้งที่ data เปลี่ยน
-watch(
-  () => props.data,
-  (newVal) => {
-    const pages = {};
-    newVal.forEach((group) => {
-      pages[group.degree.id] = currentPages.value[group.degree.id] || 1;
-    });
-    currentPages.value = pages;
-  },
-  { immediate: true }
-);
-
-const totalPages = computed(() => {
-  const pages = {};
-  props.data.forEach((group) => {
-    pages[group.degree.id] = Math.ceil(group.items.length / limit);
-  });
-  return pages;
-});
-
-const sortedData = computed(() => {
-  const customOrder = [6, 5, 4];
-
-  return [...props.data].sort((a, b) => {
-    const indexA = customOrder.indexOf(a.degree.id);
-    const indexB = customOrder.indexOf(b.degree.id);
-
-    if (indexA !== -1 && indexB !== -1) {
-      return indexA - indexB; // ถ้าเจอทั้งคู่ ให้เรียงตามลำดับใน customOrder
-    } else if (indexA !== -1) {
-      return -1; // A เจอใน customOrder ให้มาก่อน
-    } else if (indexB !== -1) {
-      return 1; // B เจอใน customOrder ให้มาก่อน
-    } else {
-      return a.degree.id - b.degree.id; // ถ้าไม่มีใน customOrder ให้เรียงตามปกติ (ascending)
-    }
-  });
-});
-
-const paginatedGroups = computed(() => {
-  return sortedData.value.map((group) => {
-    const start = (currentPages.value[group.degree.id] - 1) * limit;
-    const end = start + limit;
-    return {
-      ...group,
-      paginatedItems: group.items.slice(start, end),
-      total: group.items.length,
-    };
-  });
-});
-
-function changePage(groupId, page) {
-  if (page >= 1 && page <= totalPages.value[groupId]) {
-    currentPages.value[groupId] = page;
-  }
-}
-
-function startIndex(groupId) {
-  return (currentPages.value[groupId] - 1) * limit;
-}
-
-function endIndex(groupId) {
-  const end = startIndex(groupId) + limit;
-  const group = props.data.find((g) => g.degree.id === groupId);
-  return end > group.items.length ? group.items.length : end;
-}
-
-function startPage(groupId) {
-  const maxVisible = 4;
-  const current = currentPages.value[groupId];
-  return Math.max(1, current - Math.floor(maxVisible / 2));
-}
-
-function endPage(groupId) {
-  const maxVisible = 4;
-  const total = totalPages.value[groupId];
-  return Math.min(total, startPage(groupId) + maxVisible - 1);
-}
-
-function visiblePages(groupId) {
-  const pages = [];
-  for (let i = startPage(groupId); i <= endPage(groupId); i++) {
-    pages.push(i);
-  }
-  return pages;
-}
-
 const showEditModal = ref(false);
 const selectedCurriculum = ref(null);
 
 function openEditModal(item) {
-  console.log("Opening edit modal for:", item);
-  selectedCurriculum.value = { ...item }; // สร้าง copy เพื่อป้องกัน mutation
+  selectedCurriculum.value = { ...item };
   showEditModal.value = true;
 }
 
@@ -399,16 +207,10 @@ function closeEditModal() {
 }
 
 async function handleUpdateCurriculum(updatedData) {
-  console.log("Received update data:", updatedData);
-
   isUpdating.value = true;
-
   try {
     const { id, ...data } = updatedData;
-
-    // เรียก API อัปเดต
-    const response = await updateEducation(id, data);
-    console.log("Update response:", response);
+    await updateEducation(id, data);
 
     await Swal.fire({
       icon: "success",
@@ -419,34 +221,22 @@ async function handleUpdateCurriculum(updatedData) {
       timerProgressBar: true,
     });
 
-    // ปิด modal
     closeEditModal();
-
-    // Emit event ให้ parent refresh ข้อมูล
-    emit("refreshData");
+    emit("refreshData"); // ✅ ให้ parent โหลดข้อมูลใหม่
   } catch (error) {
-    console.error("เกิดข้อผิดพลาดในการอัปเดต:", error);
-
     let errorMessage = "ไม่สามารถอัปเดตข้อมูลหลักสูตรได้ กรุณาลองใหม่อีกครั้ง";
-
-    if (error.response) {
-      console.error("Error response:", error.response);
-      if (error.response.status === 422) {
+    if (error?.response) {
+      if (error.response.status === 422)
         errorMessage = "ข้อมูลที่กรอกไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง";
-      } else if (error.response.status === 404) {
+      else if (error.response.status === 404)
         errorMessage = "ไม่พบข้อมูลหลักสูตรที่ต้องการแก้ไข";
-      } else if (error.response.status === 403) {
+      else if (error.response.status === 403)
         errorMessage = "คุณไม่มีสิทธิ์ในการแก้ไขข้อมูลนี้";
-      } else if (error.response.status === 500) {
+      else if (error.response.status === 500)
         errorMessage = "เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์ กรุณาลองใหม่อีกครั้ง";
-      }
-
-      // แสดง error details ใน console
-      if (error.response.data) {
+      if (error.response.data)
         console.error("Error details:", error.response.data);
-      }
     }
-
     Swal.fire({
       icon: "error",
       title: "เกิดข้อผิดพลาด",
@@ -458,8 +248,8 @@ async function handleUpdateCurriculum(updatedData) {
   }
 }
 
-function handleRefreshData() {
-  // console.log("Received refreshData in DataTable");
-  emit("refreshData"); // ส่งต่อไป parent
-}
+// ✅ proxy ให้ parent
+const handleRefreshData = () => emit("refreshData");
 </script>
+
+

@@ -1,7 +1,37 @@
 <template>
   <div class="block gap-[20px] p-6 space-y-4">
     <div class="w-auto">
-      <SearchForm @onSearch="handleSearch" />
+      <SearchFormAdmin @onSearch="handleSearch" />
+    </div>
+    <AddCurriculumModal
+      :showModal="showCurriculumModal"
+      :closeModal="closeCurriculumModal"
+      @close="closeCurriculumModal"
+    />
+    <div
+      class="flex flex-row gap-4 justify-center xl:justify-end py-4 mb-8 px-4 sm:px-8 md:px-4 lg:px-4 xl:px-20"
+    >
+      <!-- ปุ่มเพิ่มข้อมูลหลักสูตร -->
+      <button
+        v-if="isAdmin"
+        @click="showCurriculumModal = true"
+        class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 bg-[#0085DB] text-white px-4 py-2 rounded-full shadow hover:bg-[#77c8fc] transition min-w-0"
+      >
+        <!-- icon -->
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          class="size-6 flex-shrink-0"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 9a.75.75 0 0 0-1.5 0v2.25H9a.75.75 0 0 0 0 1.5h2.25V15a.75.75 0 0 0 1.5 0v-2.25H15a.75.75 0 0 0 0-1.5h-2.25V9Z"
+            clip-rule="evenodd"
+          />
+        </svg>
+        <span class="whitespace-nowrap text-center">เพิ่มข้อมูลหลักสูตร</span>
+      </button>
     </div>
     <div class="w-auto md:px-10">
       <!-- ✅ แสดง DataTable และ Pagination เฉพาะเมื่อมีข้อมูล -->
@@ -13,13 +43,6 @@
           :total="total"
         />
 
-        <!-- <PaginationBar
-          :current-page="state.page"
-          :per-page="state.limit"
-          :total="meta.total"
-          :max-visible="5"
-          @changePage="onPageChange"
-        /> -->
         <PaginationBar
           :current-page="state.page"
           v-model:perPage="state.limit"
@@ -75,15 +98,18 @@
 <script setup>
 import { ref, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import SearchForm from "../components/SearchForm.vue";
-import DataTable from "../components/DataTable.vue";
-import PaginationBar from "../components/PaginationBar.vue";
 import { getEducationPaginated } from "@/services/apiService";
 import { computed } from "vue";
+import SearchFormAdmin from "@/components/SearchFormAdmin.vue";
+import AddCurriculumModal from "@/components/AddCurriculumModal.vue";
+import DataTable from "@/components/DataTable.vue";
+import PaginationBar from "@/components/PaginationBar.vue";
 
+const isAdmin = !!localStorage.getItem("token");
 const route = useRoute();
 const router = useRouter();
 
+const showCurriculumModal = ref(false);
 // ---------- state หลัก (ผูกกับ URL) ----------
 const state = ref({
   page: 1,
@@ -92,8 +118,8 @@ const state = ref({
   order: "ASC",
   limit: 10,
   type: "", // degreeId หรือ filter
-  college_active: "1",
-  curriculum_active: "1",
+  college_active: "",
+  curriculum_active: "",
   degree_active: "",
   college_name: "",
   start_year: "",
@@ -118,11 +144,22 @@ const toInt = (v, d) => {
   const n = parseInt(v, 10);
   return Number.isFinite(n) ? n : d;
 };
-const toStr = (v) => (v == null ? "" : String(v));
+
+// แปลงค่า option: null/undefined/"undefined"/"null"/"" -> ""
+const toOpt = (v) => {
+  if (v == null) return "";
+  const s = String(v).trim();
+  return s === "" ||
+    s.toLowerCase() === "undefined" ||
+    s.toLowerCase() === "null"
+    ? ""
+    : s;
+};
+
 const clean = (obj) => {
   const out = {};
   for (const [k, v] of Object.entries(obj)) {
-    if (v === "" || v == null) continue;
+    if (v === "" || v == null) continue; // ตัดค่าว่างออกจาก URL
     out[k] = String(v);
   }
   return out;
@@ -131,41 +168,41 @@ const clean = (obj) => {
 function syncStateFromQuery() {
   const q = route.query;
   state.value.page = toInt(q.page, 1);
-  state.value.search = toStr(q.search);
+  state.value.search = toOpt(q.search);
   state.value.sort = toInt(q.sort, 0);
   state.value.order =
     String(q.order || "").toUpperCase() === "DESC" ? "DESC" : "ASC";
   state.value.limit = toInt(q.limit, 10);
 
-  state.value.type = toStr(q.type);
-  state.value.college_active = toStr(q.college_active) || "1";
-  state.value.curriculum_active = toStr(q.curriculum_active) || "1";
-  state.value.degree_active = toStr(q.degree_active);
-  state.value.college_name = toStr(q.college_name);
+  state.value.type = toOpt(q.type);
+  state.value.college_active = toOpt(q.college_active) || "";
+  state.value.curriculum_active = toOpt(q.curriculum_active) || "";
+  state.value.degree_active = toOpt(q.degree_active);
+  state.value.college_name = toOpt(q.college_name);
 
-  state.value.start_year = toStr(q.start_year);
-  state.value.end_year = toStr(q.end_year);
-  state.value.curriculum_published = toStr(q.curriculum_published);
-  state.value.meeting_resolution = toStr(q.meeting_resolution);
+  state.value.start_year = toOpt(q.start_year);
+  state.value.end_year = toOpt(q.end_year);
+  state.value.curriculum_published = toOpt(q.curriculum_published); // <-- จะไม่เป็น "undefined" แล้ว
+  state.value.meeting_resolution = toOpt(q.meeting_resolution); // <--
 }
 
 function buildFullQuery(partial = {}) {
   const s = { ...state.value, ...partial };
   return {
     page: s.page,
-    search: s.search,
+    search: toOpt(s.search),
     sort: s.sort,
     order: s.order,
     limit: s.limit,
-    type: s.type,
-    college_active: s.college_active,
-    curriculum_active: s.curriculum_active,
-    degree_active: s.degree_active,
-    college_name: s.college_name,
-    start_year: s.start_year,
-    end_year: s.end_year,
-    curriculum_published: s.curriculum_published,
-    meeting_resolution: s.meeting_resolution,
+    type: toOpt(s.type),
+    college_active: toOpt(s.college_active),
+    curriculum_active: toOpt(s.curriculum_active),
+    degree_active: toOpt(s.degree_active),
+    college_name: toOpt(s.college_name),
+    start_year: toOpt(s.start_year),
+    end_year: toOpt(s.end_year),
+    curriculum_published: toOpt(s.curriculum_published),
+    meeting_resolution: toOpt(s.meeting_resolution),
   };
 }
 
@@ -181,17 +218,16 @@ async function fetchData() {
     const filters = {
       sort: state.value.sort,
       order: state.value.order,
-      search: state.value.search,
-      college_name: state.value.college_name.trim(),
-      college_active: state.value.college_active,
-      curriculum_active: state.value.curriculum_active,
-      degree_active: state.value.degree_active,
-      // ส่ง filter เพิ่มเติม
-      start_year: state.value.start_year,
-      end_year: state.value.end_year,
-      curriculum_published: state.value.curriculum_published,
-      meeting_resolution: state.value.meeting_resolution,
-      type: state.value.type, // ถ้า service ใช้ type ภายใน
+      search: toOpt(state.value.search),
+      college_name: toOpt(state.value.college_name),
+      college_active: toOpt(state.value.college_active),
+      curriculum_active: toOpt(state.value.curriculum_active),
+      degree_active: toOpt(state.value.degree_active),
+      start_year: toOpt(state.value.start_year),
+      end_year: toOpt(state.value.end_year),
+      curriculum_published: toOpt(state.value.curriculum_published),
+      meeting_resolution: toOpt(state.value.meeting_resolution),
+      type: toOpt(state.value.type),
     };
 
     console.log("👉 filters:", filters);
@@ -261,13 +297,25 @@ function handleSearch(f = {}) {
 // ---------- lifecycle ----------
 onMounted(() => {
   syncStateFromQuery();
-  if (!Object.keys(route.query).length) {
-    // seed URL เพื่อให้แชร์ลิงก์/รีเฟรชแล้วได้สถานะเดียวกัน
-    pushQuery({});
+  // ถ้ามีค่าไม่พึงประสงค์ -> เขียน URL ใหม่ให้สะอาด
+  const q = route.query;
+  const hasBad = ["curriculum_published", "meeting_resolution"].some(
+    (k) =>
+      typeof q[k] === "string" &&
+      ["undefined", "null", ""].includes(q[k].trim().toLowerCase())
+  );
+
+  if (!Object.keys(q).length || hasBad) {
+    pushQuery({}); // จะผ่าน clean() ตัดค่าว่างออก
   } else {
     fetchData();
   }
 });
+
+function closeCurriculumModal() {
+  showCurriculumModal.value = false;
+  fetchData();
+}
 
 // เปลี่ยน URL (รวม back/forward) → sync + fetch
 watch(

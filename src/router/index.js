@@ -1,9 +1,9 @@
 import { createRouter, createWebHistory } from "vue-router";
 import CurriculumList from "@/views/CurriculumList.vue";
-import CurriculumListAdmin from "@/views/admin/CurriculumListAdmin.vue";
 import Login from "@/views/admin/Login.vue";
 import Swal from "sweetalert2";
 import AddCollegeAdmin from "@/views/admin/AddCollegeAdmin.vue";
+import AdminCurriculumList from "@/views/admin/CurriculumList.vue";
 
 // ตรวจสอบ token และเวลา session
 function checkSession() {
@@ -49,7 +49,7 @@ const routes = [
   {
     path: "/admin/curriculum",
     name: "admin-curriculum",
-    component: CurriculumListAdmin,
+    component: AdminCurriculumList,
     beforeEnter: async (to, from, next) => {
       if (checkSession()) {
         next();

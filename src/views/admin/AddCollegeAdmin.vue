@@ -1,82 +1,22 @@
 <template>
-  <div class="relative p-6">
-    <!-- Header -->
-    <header
-      class="bg-custom-gradient rounded-md pb-16 md:pb-20 pt-10 md:mb-16 flex flex-col text-center shadow-md"
-    >
-      <div class="flex items-start px-4">
-        <Breadcrumb />
-      </div>
-      <div class="px-4 md:px-0">
-        <img
-          class="mx-auto h-20 md:h-28"
-          src="../../assets/img/tfac.ico"
-          alt=""
-        />
-        <h1
-          class="text-[#111C2D]/80 text-lg md:text-3xl font-bold drop-shadow-sm mt-4"
-        >
-          สถาบันการศึกษาที่ผ่านการรับรองจากสภาวิชาชีพบัญชี ในพระบรมราชูปถัมภ์
-        </h1>
-      </div>
-    </header>
-
-    <!-- Filter Section -->
-    <div class="px-4 md:px-8 md:absolute md:bottom-0 md:left-0 md:right-0 mb-6">
-      <div
-        class="flex flex-col md:flex-row gap-4 md:gap-6 bg-white p-4 rounded-lg border shadow-sm text-gray-700 w-full max-w-4xl mx-auto"
-      >
-        <!-- กล่องที่ 1 -->
-        <div class="flex-1">
-          <label class="block font-semibold text-gray-700 mb-2">
-            ชื่อสถาบันการศึกษา
-          </label>
-          <input
-            type="text"
-            id="simple-search"
-            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full ps-5 p-2.5"
-            placeholder="กรุณากรอกชื่อสถาบันการศึกษาที่ต้องการค้นหา"
-          />
-        </div>
-
-        <!-- กล่องที่ 2 -->
-        <div class="w-full md:w-auto flex items-end">
-          <button
-            class="bg-[#F8B15D] hover:bg-[#FE7743] text-white px-6 py-3 rounded-md shadow flex items-center justify-center gap-2 transition-all font-medium w-full md:w-auto min-w-[8rem]"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              class="size-6 flex-shrink-0"
-            >
-              <path
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                d="M20 8c-1.403-2.96-4.463-5-8-5a9 9 0 1 0 0 18a9 9 0 0 0 9-9m0-9v6h-6"
-              />
-            </svg>
-            Reset
-          </button>
-        </div>
-      </div>
+  <div class="p-6 text-gray-700 space-y-4">
+    <div class="w-auto">
+      <SearchCollegeAdmin @update:filters="onFiltersUpdate" />
     </div>
-  </div>
-  <div class="p-6 text-gray-700">
     <!-- ตาราง -->
-    <div class="mb-8 mt-8 px-4 sm:px-8 md:px-4 lg:px-4 xl:px-20">
+    <div class="mb-8 sm:px-8 md:px-4 lg:px-4 xl:px-20">
       <div
         class="flex flex-col sm:flex-row justify-between items-center sm:items-center py-4"
       >
-        <!-- หัวข้อ -->
-        <h2 class="text-lg font-bold mb-3 sm:mb-0">
-          จํานวน ({{ totalItems }}) สถาบันการศึกษา
-        </h2>
+        <p class="text-lg font-bold mb-3 sm:mb-0">
+          สถาบัน ({{
+            Number(totalItems ?? 0).toLocaleString("th-TH-u-nu-latn")
+          }}) รายการ
+        </p>
 
-        <!-- ปุ่ม -->
         <button
           @click="showCollegeModal = true"
-          class="inline-flex items-center gap-2 bg-[#ed590e] text-white px-4 py-2 rounded-full shadow hover:bg-blue-500"
+          class="inline-flex items-center gap-2 bg-[#0085DB] hover:bg-[#0072B1] text-white px-4 py-2 rounded-full shadow"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -94,51 +34,79 @@
         </button>
       </div>
 
-      <div class="overflow-x-auto">
+      <div
+        class="overflow-y-auto md:overflow-y-hidden border border-gray-300 rounded-lg"
+      >
         <table
-          class="table-auto w-full border-collapse border border-gray-300 text-sm sm:text-base"
+          class="w-full border-collapse border border-gray-300 text-sm sm:text-base"
         >
           <thead>
-            <tr class="bg-[#F0F5F9]">
-            <th class="border px-2 py-[1rem]  font-bold whitespace-nowrap w-[60px]">ลำดับ</th>
-            <th class="border px-2 py-[1rem]  font-bold whitespace-nowrap w-[400px]">
-              ชื่อสถาบันการศึกษา
-            </th>
-            <th class="border px-2 py-[1rem]  font-bold whitespace-nowrap w-[300px]">
-              ชื่อหลักสูตร
-            </th>
-            <th class="border px-2 py-[1rem]  font-bold whitespace-nowrap w-[200px]">
-              หลักสูตร
-            </th>
-            <th class="border px-2 py-[1rem]  font-bold whitespace-nowrap w-[100px]">
-              ปีเริ่มต้น
-            </th>
-            <th class="border px-2 py-[1rem]  font-bold whitespace-nowrap w-[100px]">
-              ปีสิ้นสุด
-            </th>
-            <th
-              class="border px-2 py-[1rem]  font-bold whitespace-nowrap w-[100px]"
-            >
-              สถานะ
-            </th>
-            <th class="border px-2 py-[1rem]  font-bold w-[100px]">รายละเอียด</th>
-            <th
-              class="border px-2 py-[1rem]  font-bold font-bold whitespace-nowrap w-[100px]"
-            >
-              แก้ไข
-            </th>
-          </tr>
+            <tr class="bg-[#E2EDFC]">
+              <th
+                class="border px-2 py-[0.7rem] font-bold whitespace-nowrap w-[40px]"
+              >
+                กลุ่มสถาบัน
+              </th>
+              <th
+                class="border px-2 py-[0.7rem] font-bold whitespace-nowrap w-[400px]"
+              >
+                ชื่อสถาบันการศึกษา
+              </th>
+              <th
+                class="border px-2 py-[0.7rem] font-bold whitespace-nowrap w-[200px]"
+              >
+                วิทยาเขต
+              </th>
+
+              <th
+                class="border px-2 py-[0.7rem] font-bold whitespace-nowrap w-[100px]"
+              >
+                ประเทศ
+              </th>
+              <th
+                class="border px-2 py-[0.7rem] font-bold whitespace-nowrap w-[100px]"
+              >
+                จังหวัด
+              </th>
+              <th
+                class="border px-2 py-[0.7rem] font-bold whitespace-nowrap w-[50px]"
+              >
+                จำนวนหลักสูตร
+              </th>
+              <th
+                class="border px-2 py-[0.7rem] font-bold whitespace-nowrap w-[50px]"
+              >
+                สถานะการเผยแพร่
+              </th>
+              <th
+                class="border px-2 py-[0.7rem] font-bold whitespace-nowrap w-[50px]"
+              >
+                สถานะการใช้งาน
+              </th>
+              <th
+                class="border px-2 py-[0.7rem] font-bold whitespace-nowrap w-[50px]"
+              >
+                จัดการ
+              </th>
+            </tr>
           </thead>
           <tbody>
             <tr
-              v-for="(item, index) in colleges"
+              v-for="item in colleges"
               :key="item.id"
               class="hover:bg-gray-50 text-gray-600"
             >
               <td class="border px-2 py-1 text-center">
-                {{ index + 1 + (currentPage - 1) * perPage }}
+                {{ item.institute_group }}
               </td>
               <td class="border px-2 py-1 break-words">{{ item.name }}</td>
+              <td class="border px-2 py-1 break-words">{{ item.campus }}</td>
+              <td class="border px-2 py-1 break-words">
+                {{ item.countryName }}
+              </td>
+              <td class="border px-2 py-1 break-words">
+                {{ item.provinceName }}
+              </td>
               <td
                 class="border px-2 py-1 break-words cursor-pointer"
                 @click="goToCurriculum(item.name)"
@@ -150,128 +118,138 @@
               >
                 <span
                   :class="
-                    item.active
-                      ? 'bg-[#09C97F1A] text-[#09C97F] font-semibold'
-                      : 'bg-[#FB977D1A] text-[#FB977D] font-semibold'
+                    item.is_published
+                      ? 'bg-[#09C97F1A] text-[#09C97F]'
+                      : 'bg-[#FB977D1A] text-[#FB977D]'
                   "
                   class="rounded-full px-3 py-1 text-xs readonly font-medium"
                 >
-                  {{ item.active ? "Active" : "Inactive" }}
+                  {{ item.is_published === true ? "เผยแพร่" : "ไม่เผยแพร่" }}
                 </span>
               </td>
-              <td class="border px-2 py-1 text-center">
-                <button
-                  @click="openEditcollegeModal(item)"
-                  class="inline-flex items-center bg-orange-400 text-white px-2 py-2 rounded-full hover:bg-orange-500 transition"
+              <td
+                class="border px-2 py-1 text-center items-center justify-center"
+              >
+                <span
+                  :class="
+                    item.active
+                      ? 'bg-[#09C97F1A] text-[#09C97F]'
+                      : 'bg-[#FB977D1A] text-[#FB977D]'
+                  "
+                  class="rounded-full px-3 py-1 text-xs readonly font-medium"
                 >
-                  <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke-width="1.5"
-                  stroke="currentColor"
-                  class="size-6"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
-                  />
-                </svg>
-                </button>
+                  {{ item.active === 1 ? "ใช้งาน" : "ไม่ใช้งาน" }}
+                </span>
+              </td>
+              <td class="border px-2 py-1">
+                <div class="flex flex-row gap-2 items-center justify-center">
+                  <!-- View Detail -->
+                  <div class="relative inline-block group">
+                    <button
+                      @click.stop="openDetailCollegeModal(item)"
+                      :aria-describedby="`tt-view-${item.id}`"
+                      class="inline-flex items-center bg-[#0085DB] text-white w-10 h-10 rounded-full hover:bg-blue-500 transition justify-center"
+                      type="button"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="size-7"
+                      >
+                        <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                        <g
+                          id="SVGRepo_tracerCarrier"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        ></g>
+                        <g id="SVGRepo_iconCarrier">
+                          <path
+                            d="M4.5 12.5C7.5 6 16.5 6 19.5 12.5"
+                            stroke="#ffff"
+                            stroke-width="1.5"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          ></path>
+                          <path
+                            d="M12 16C10.8954 16 10 15.1046 10 14C10 12.8954 10.8954 12 12 12C13.1046 12 14 12.8954 14 14C14 15.1046 13.1046 16 12 16Z"
+                            stroke="#ffff"
+                            stroke-width="1.5"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          ></path>
+                        </g>
+                      </svg>
+                    </button>
+
+                    <!-- tooltip -->
+                    <div
+                      :id="`tt-view-${item.id}`"
+                      role="tooltip"
+                      class="pointer-events-none absolute z-50 left-1/2 -translate-x-1/2 top-full mt-2 whitespace-nowrap rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white opacity-0 invisible transition-opacity duration-200 group-hover:opacity-100 group-hover:visible"
+                    >
+                      View detail
+                      <span
+                        class="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"
+                      ></span>
+                    </div>
+                  </div>
+
+                  <!-- Edit -->
+
+                  <!-- Edit -->
+                  <div class="relative inline-block group">
+                    <button
+                      @click.stop="openEditcollegeModal(item)"
+                      :aria-describedby="`tt-edit-${item.id}`"
+                      class="inline-flex items-center bg-[#F8B15D] text-white w-10 h-10 rounded-full hover:bg-orange-500 transition justify-center"
+                      type="button"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke-width="1.5"
+                        stroke="currentColor"
+                        class="size-6"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+                        />
+                      </svg>
+                    </button>
+
+                    <!-- tooltip -->
+                    <div
+                      :id="`tt-edit-${item.id}`"
+                      role="tooltip"
+                      class="pointer-events-none absolute z-50 left-1/2 -translate-x-1/2 top-full mt-2 whitespace-nowrap rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white opacity-0 invisible transition-opacity duration-200 group-hover:opacity-100 group-hover:visible"
+                    >
+                      Edit
+                      <span
+                        class="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"
+                      ></span>
+                    </div>
+                  </div>
+                </div>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
-      <!-- Pagination -->
-      <div
-        class="flex flex-col sm:flex-row sm:items-center sm:justify-between border-t border-gray-200 bg-white px-4 py-3 mt-3 gap-3"
-      >
-        <div class="text-sm text-gray-700 text-center sm:text-left">
-          Showing
-          <span class="font-medium">{{ startIndex + 1 }}</span>
-          to
-          <span class="font-medium">{{ endIndex }}</span>
-          of
-          <span class="font-medium">{{ totalItems }}</span>
-          results
-        </div>
-
-        <!-- ถ้ามีหน้ามากกว่า 1 ให้แสดง pagination -->
-        <nav
-          v-if="totalPages > 1"
-          class="isolate inline-flex -space-x-px rounded-md shadow-sm mx-auto sm:mx-0"
-          aria-label="Pagination"
-        >
-          <!-- ไปหน้าแรก -->
-          <button
-            @click="changePage(1)"
-            :disabled="currentPage === 1"
-            class="px-3 py-1 border rounded-l disabled:opacity-50"
-          >
-            «
-          </button>
-
-          <!-- ก่อนหน้า -->
-          <button
-            @click="changePage(currentPage - 1)"
-            :disabled="currentPage === 1"
-            class="px-3 py-1 border disabled:opacity-50"
-          >
-            ‹
-          </button>
-
-          <!-- ถ้าหน้าแรกไม่ใช่ 1 ให้แสดง 1 + ... -->
-          <template v-if="visiblePages[0] > 1">
-            <button class="px-3 py-1 border" @click="changePage(1)">1</button>
-            <span class="px-3 py-1 border">...</span>
-          </template>
-
-          <!-- แสดงหน้าที่ visible -->
-          <button
-            v-for="page in visiblePages"
-            :key="page"
-            @click="changePage(page)"
-            :class="[
-              'px-3 py-1 border',
-              page === currentPage
-                ? 'bg-blue-500 text-white'
-                : 'bg-white text-gray-800',
-            ]"
-          >
-            {{ page }}
-          </button>
-
-          <!-- ถ้าหน้าสุดท้ายไม่อยู่ในช่วง ให้แสดง ... + หน้าสุดท้าย -->
-          <template v-if="visiblePages[visiblePages.length - 1] < totalPages">
-            <span class="px-3 py-1 border">...</span>
-            <button class="px-3 py-1 border" @click="changePage(totalPages)">
-              {{ totalPages }}
-            </button>
-          </template>
-
-          <!-- ถัดไป -->
-          <button
-            @click="changePage(currentPage + 1)"
-            :disabled="currentPage === totalPages"
-            class="px-3 py-1 border disabled:opacity-50"
-          >
-            ›
-          </button>
-
-          <!-- ไปหน้าสุดท้าย -->
-          <button
-            @click="changePage(totalPages)"
-            :disabled="currentPage === totalPages"
-            class="px-3 py-1 border rounded-r disabled:opacity-50"
-          >
-            »
-          </button>
-        </nav>
-      </div>
+      <PaginationBar
+        :current-page="state.page"
+        v-model:perPage="state.limit"
+        :per-page="state.limit"
+        :total="totalItems"
+        :max-visible="5"
+        @changePage="onPageChange"
+        @changePerPage="onPerPageChange"
+      />
+      
     </div>
-
     <!-- Add Modal -->
     <AddCollegeModal
       :showModal="showCollegeModal"
@@ -282,9 +260,18 @@
     <!-- Edit Modal - เพิ่มส่วนนี้ -->
     <EditCollegeModal
       :showModal="showEditModal"
-      :closeModal="closeEditModal"
       :selectedCollege="selectedCollege"
-      @close="closeEditModal"
+      @close="showEditModal = false"
+      @saved="fetchData"
+    />
+
+    <!-- Detail Modal -->
+    <DetailCollegeModal
+      :key="selectedCollegeDetail.id"
+      :showModal="showCollegeDetailModal"
+      :closeModal="closeCollegeDetailModal"
+      :collegeId="selectedCollegeDetail.id"
+      @close="closeCollegeDetailModal"
     />
   </div>
   <!-- Loading Overlay -->
@@ -299,120 +286,235 @@
     </div>
   </div>
 </template>
-<script setup>
-import { ref, computed, onMounted, watch } from "vue";
-import AddCollegeModal from "@/components/AddCollegeModal.vue";
-import EditCollegeModal from "@/components/EditCollegeModal.vue"; // ✅ Add this import
-import { countCurriculum, getColleges } from "@/services/apiService";
-import { useRouter } from "vue-router";
-import Breadcrumb from "@/components/ฺBreadcrumb.vue";
 
-const colleges = ref([]);
+<script setup>
+import { ref, onMounted, watch, computed } from "vue";
+import { useRoute, useRouter } from "vue-router";
+
+import PaginationBar from "@/components/PaginationBar.vue";
+import {
+  getCollegesPaginated,
+  countCurriculum,
+  countryList,
+  provinceList,
+} from "@/services/apiService";
+import SearchCollegeAdmin from "@/components/SearchCollegeAdmin.vue";
+import AddCollegeModal from "@/components/AddCollegeModal.vue";
+import EditCollegeModal from "@/components/EditCollegeModal.vue";
+import DetailCollegeModal from "@/components/DetailCollegeModal.vue";
+
+const route = useRoute();
+const router = useRouter();
 const showCollegeModal = ref(false);
-const search = ref("");
-const selectedCollege = ref({});
 const showEditModal = ref(false);
-// Pagination state
-const currentPage = ref(1);
-const perPage = 10;
+const selectedCollege = ref({});
+const DEFAULTS = {
+  page: 1,
+  limit: 10,
+  search: "",
+  sort: "id",
+  order: "ASC",
+  province: "",
+  country: "",
+  is_published: "", // "", "true"|"false"|"1"|"0" ก็จะถูกแปลงต่อภายหลัง
+  status: "", // "", "0"|"1"
+};
+
+const state = ref({ ...DEFAULTS });
+
+/** helper: แปลงค่าใด ๆ -> boolean | undefined */
+function toBoolish(v) {
+  if (v === true || v === "true" || v === 1 || v === "1") return true;
+  if (v === false || v === "false" || v === 0 || v === "0") return false;
+  return undefined; // หมายถึง "ไม่กรอง"
+}
+
+/** อ่านค่าจาก URL -> state (คงค่า raw ไว้ให้ URL สวย ๆ) */
+function fromQuery(q) {
+  return {
+    page: Number(q.page ?? DEFAULTS.page),
+    limit: Number(q.limit ?? DEFAULTS.limit),
+    search: String(q.search ?? DEFAULTS.search),
+
+    // ป้องกันสลับค่า: คุมให้อยู่ในโดเมนที่ถูก
+    sort: String(q.sort ?? DEFAULTS.sort) || "id",
+    order:
+      String(q.order ?? DEFAULTS.order).toUpperCase() === "DESC"
+        ? "DESC"
+        : "ASC",
+
+    province: String(q.province ?? DEFAULTS.province),
+    country: String(q.country ?? DEFAULTS.country),
+
+    // เก็บ “raw string” ไว้ใน state เพื่อสะท้อนบน URL เช่นเดิม
+    // แต่ตอนยิง API จะไปแปลงเป็น boolean/number อีกที
+    is_published: q.is_published !== undefined ? String(q.is_published) : "", // "", "true"|"false"|"1"|"0"
+    status: q.status === "0" || q.status === "1" ? q.status : "",
+  };
+}
+
+/** สร้าง query สำหรับ URL (อย่าทิ้ง false/0) */
+function updateRoute(partial, { replace = false } = {}) {
+  const next = { ...state.value, ...partial };
+  const query = Object.fromEntries(
+    Object.entries(next).filter(
+      ([, v]) => v !== "" && v !== null && v !== undefined
+    )
+  );
+  replace ? router.replace({ query }) : router.push({ query });
+}
+
+/** แปลง state -> พารามิเตอร์ที่จะส่งเข้า API (ชนิดข้อมูลถูกต้อง) */
+function toApiParams(s) {
+  const out = {
+    page: s.page,
+    limit: s.limit,
+    search: (s.search || "").trim(),
+    // คุมไม่ให้สลับกัน
+    sort: s.sort || "id",
+    order: (s.order || "ASC").toUpperCase() === "DESC" ? "DESC" : "ASC",
+
+    country: s.country || undefined,
+    province: s.province || undefined,
+
+    status: s.status === "" ? undefined : Number(s.status), // "0"|"1" -> 0|1
+  };
+
+  // is_published -> true/false/undefined
+  const b = toBoolish(s.is_published);
+  if (b !== undefined) out.is_published = b;
+
+  // ลบค่าว่าง/undefined ออกจาก payload ที่จะส่ง
+  return Object.fromEntries(
+    Object.entries(out).filter(
+      ([, v]) => v !== "" && v !== undefined && v !== null
+    )
+  );
+}
+
+// ---------- fetch ----------
+const isLoading = ref(false);
+const colleges = ref([]);
 const totalItems = ref(0);
 const totalPages = ref(1);
-const router = useRouter();
-// แสดงผลดัชนีเริ่มและสิ้นสุด
-const startIndex = computed(() => (currentPage.value - 1) * perPage);
-const endIndex = computed(() =>
-  Math.min(currentPage.value * perPage, totalItems.value)
-);
-const isLoading = ref(false);
-const curriculumCountsMap = ref({});
-let searchTimeout = null;
-
-// สร้างหน้าเพจที่จะแสดง (สูงสุด 5 ปุ่ม)
-const visiblePages = computed(() => {
-  const pages = [];
-  const maxVisible = 5;
-  let start = Math.max(currentPage.value - 2, 1);
-  let end = Math.min(start + maxVisible - 1, totalPages.value);
-
-  if (end - start < maxVisible - 1) {
-    start = Math.max(end - maxVisible + 1, 1);
-  }
-
-  for (let i = start; i <= end; i++) {
-    pages.push(i);
-  }
-  return pages;
-});
-
-const fetchData = async () => {
+async function fetchData() {
+  isLoading.value = true;
   try {
-    isLoading.value = true;
+    const apiParams = toApiParams(state.value);
 
-    // 1️⃣ ดึงข้อมูลมหาวิทยาลัยตาม page
-    const params = {
-      page: currentPage.value,
-      limit: perPage,
-      sort: "id",
-      order: "ASC",
-      search: search.value.trim(),
-    };
-    const res = await getColleges(params);
-    const collegesPage = res.data?.data || [];
+    // ✅ ดึง college + curriculum count พร้อมกัน
+    const [res, countRes, countryRes, provinceRes] = await Promise.all([
+      getCollegesPaginated(apiParams.page, apiParams.limit, apiParams),
+      countCurriculum(apiParams),
+      countryList(), // ⬅️ ดึงประเทศเพิ่มเข้ามา
+      provinceList(), // ⬅️ ดึงจังหวัดเพิ่มเข้ามา
+    ]);
 
-    // 2️⃣ โหลดจำนวนหลักสูตรครั้งเดียว (ถ้ายังไม่มี)
-    if (Object.keys(curriculumCountsMap.value).length === 0) {
-      const curriculumCountsRes = await countCurriculum();
-      const curriculumCounts = curriculumCountsRes.data?.data || [];
+    // ---- จัดการ college list ----
+    const payload = res?.data ?? {};
+    const list = Array.isArray(payload.data) ? payload.data : [];
+    const meta = payload.meta ?? {};
 
-      // แปลงเป็น map เพื่อเข้าถึงง่าย
-      curriculumCounts.forEach((c) => {
-        curriculumCountsMap.value[c.college_id] = Number(c.curriculum_count);
-      });
+    totalItems.value = Number(meta.total) || 0;
+    totalPages.value =
+      Number(meta.last_page) ||
+      Math.max(1, Math.ceil(totalItems.value / (state.value.limit || 10)));
+
+    // ---- จัดการจำนวนหลักสูตร ----
+    const countsArr = countRes?.data?.data ?? countRes?.data ?? [];
+
+    /** @type {Record<number, number>} */
+    const countsMap = {};
+    for (const cur of countsArr) {
+      const id = Number(cur.college_id ?? cur.id);
+      const cnt = Number(cur.curriculum_count ?? cur.count ?? 0);
+      if (Number.isFinite(id)) countsMap[id] = Number.isFinite(cnt) ? cnt : 0;
     }
-
-    // 3️⃣ map จำนวนหลักสูตรเข้ากับหน้า current page
-    colleges.value = collegesPage.map((college) => ({
-      ...college,
-      curriculumCount: curriculumCountsMap.value[college.id] || 0,
+    // console.log("Counts Map by college_id:", countsMap);
+    // ------- Countries -> Map(id -> name) -------
+    const countries = (countryRes?.data ?? []).map((c) => ({
+      id: String(c.id ?? c.country_id ?? c.code),
+      // รองรับหลาย key ของชื่อประเทศ
+      name: (
+        c.name ??
+        c.name_th ??
+        c.en_name ??
+        c.country_name ??
+        c.code ??
+        ""
+      ).trim(),
     }));
+    const countryMap = new Map(countries.map((c) => [c.id, c.name]));
+    const resolveCountryName = (v) => {
+      if (v === null || v === undefined || v === "") return "";
+      const key = String(v).trim();
+      return countryMap.get(key) ?? key; // ถ้าไม่ตรง id ใน map ให้แสดงค่าที่มาจาก API ตรง ๆ
+    };
 
-    // 4️⃣ meta pagination
-    const meta = res.data?.meta || {};
-    totalItems.value = meta.total || 0;
-    totalPages.value = meta.last_page || 1;
+    // ------- Provinces -> Map(id -> name) -------
+    const provinces = (provinceRes?.data ?? []).map((p) => ({
+      id: String(p.id ?? p.province_id),
+      // เลือกชื่อไทยก่อน ถ้าไม่มีค่อย fallback อังกฤษ/ชื่อทั่วไป
+      name: (p.name_th ?? p.name_en ?? p.province_name ?? p.name ?? "").trim(),
+    }));
+    const provinceMap = new Map(provinces.map((p) => [p.id, p.name]));
 
-    console.log({ colleges: colleges.value });
-  } catch (err) {
-    console.error("Error fetching data:", err);
+    const resolveProvinceName = (v) => {
+      // v อาจเป็น "1" (ไทย -> id เป็น string/number) หรือเป็น free-text (ต่างประเทศ)
+      if (v === null || v === undefined || v === "") return "";
+      const key = String(v).trim();
+      return provinceMap.get(key) ?? key; // ไม่พบ id ใน map → แสดง free-text ตามที่เก็บมา
+    };
+    // ---- ประกอบรายการสำหรับตาราง (flatten parent + children) ----
+    colleges.value = list.map((item) => {
+      const idNum = Number(item.id);
+      return {
+        ...item,
+        // ✅ ใช้ id ของแถวนั้นแม่น ๆ
+        curriculumCount: Number.isFinite(idNum) ? countsMap[idNum] ?? 0 : 0,
+        countryName: resolveCountryName(item.country),
+        provinceName: resolveProvinceName(item.province),
+      };
+    });
+  } catch (e) {
+    console.error("fetchData error:", e);
+    colleges.value = [];
+    totalItems.value = 0;
+    totalPages.value = 1;
   } finally {
     isLoading.value = false;
   }
-};
+}
 
-// เพิ่ม debounce เล็กน้อย
-watch(search, (newVal) => {
-  clearTimeout(searchTimeout);
-  searchTimeout = setTimeout(() => {
-    currentPage.value = 1; // เริ่มที่หน้าแรกทุกครั้งที่ค้นหาใหม่
-    fetchData();
-  }, 300); // 300ms delay หลังเลิกพิมพ์
+onMounted(() => {
+  state.value = fromQuery(route.query);
+  fetchData();
 });
 
-// ไปหน้า curriculum
-function goToCurriculum(collegeId) {
-  router.push({
-    path: "/admin/curriculum",
-    query: { collegeId },
-  });
-}
-
-function changePage(page) {
-  if (page >= 1 && page <= totalPages.value) {
-    currentPage.value = page;
-    fetchData();
+watch(
+  () => route.query,
+  (q) => {
+    state.value = fromQuery(q);
+    fetchData(); // ดึงใหม่อัตโนมัติทุกครั้งที่ URL เปลี่ยน
   }
+);
+
+// ---------- รับค่าจากลูก (SearchCollegeAdmin.vue) ----------
+function onFiltersUpdate(payload) {
+  // payload เป็น “raw” (เช่น is_published อาจเป็น true/false หรือ "")
+  // เราจะเก็บลง URL แบบ raw ก่อน แล้วค่อยแปลงตอน fetch
+  updateRoute({ ...payload }, { replace: true });
 }
 
+// ---------- pagination ----------
+function onPageChange(newPage) {
+  updateRoute({ page: newPage });
+}
+function onPerPageChange(newLimit) {
+  updateRoute({ limit: newLimit, page: 1 });
+}
+
+// ---------- modal ----------
 function closeEditModal() {
   showEditModal.value = false;
   selectedCollege.value = {};
@@ -430,13 +532,23 @@ function openEditcollegeModal(item) {
   showEditModal.value = true;
 }
 
-function reset() {
-  search.value = "";
-  currentPage.value = 1;
-  fetchData();
+// ---------- Detail Modal ----------
+const showCollegeDetailModal = ref(false);
+const selectedCollegeDetail = ref({});
+
+function openDetailCollegeModal(item) {
+  if (!item || !item.id) {
+    console.warn("openDetailCollegeModal: item ไม่มี id", item);
+    return;
+  }
+  selectedCollegeDetail.value = { id: item.id };
+  showCollegeDetailModal.value = true;
 }
 
-onMounted(fetchData);
+function closeCollegeDetailModal() {
+  showCollegeDetailModal.value = false;
+  selectedCollegeDetail.value = {};
+}
 </script>
 
 
