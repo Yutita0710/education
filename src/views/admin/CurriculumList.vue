@@ -41,6 +41,7 @@
           :meta="meta"
           :isAdmin="true"
           :total="total"
+          @refreshData="fetchData"
         />
 
         <PaginationBar

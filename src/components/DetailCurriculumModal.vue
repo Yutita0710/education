@@ -1,0 +1,215 @@
+<template>
+  <div
+    v-if="showModal"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 text-gray-700"
+  >
+    <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-4xl relative">
+      <!-- ปุ่มปิด -->
+      <button
+        @click="handleClose"
+        class="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+        aria-label="Close modal"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          class="size-8 mr-2"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm-1.72 6.97a.75.75 0 1 0-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 1 0 1.06 1.06L12 13.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L13.06 12l1.72-1.72a.75.75 0 1 0-1.06-1.06L12 10.94l-1.72-1.72Z"
+            clip-rule="evenodd"
+          />
+        </svg>
+      </button>
+
+      <h2 class="text-xl font-bold text-center mb-4">
+        รายละเอียดหลักสูตร
+      </h2>
+
+      <!-- Loading / Error -->
+      <div v-if="isLoading" class="py-8 text-center text-gray-500">กำลังโหลดข้อมูล...</div>
+      <div v-else-if="loadError" class="py-6 text-center">
+        <p class="text-red-600">ไม่สามารถดึงข้อมูลได้: {{ loadError }}</p>
+      </div>
+
+      <!-- Content -->
+      <div v-else>
+        <!-- แถวทั่วไป (2 คอลัมน์) -->
+        <dl class="grid grid-cols-[210px_1fr] gap-x-6 gap-y-3">
+          <dt class="text-gray-600 font-semibold">ชื่อสถาบัน</dt>
+          <dd class="text-gray-900">{{ collegeName }}</dd>
+
+          <dt class="text-gray-600 font-semibold">ชื่อหลักสูตร</dt>
+          <dd class="text-gray-900 break-words">{{ detail.name ?? "-" }}</dd>
+
+          <dt class="text-gray-600 font-semibold">หลักสูตร</dt>
+          <dd class="text-gray-900 break-words">{{ description }}</dd>
+
+          <dt class="text-gray-600 font-semibold">ระดับการศึกษา</dt>
+          <dd class="text-gray-900">{{ degreeName }}</dd>
+
+          <dt class="text-gray-600 font-semibold">หลักสูตรสำหรับ</dt>
+          <dd class="text-gray-900">{{ typeNames }}</dd>
+
+          <dt class="text-gray-600 font-semibold">รายละเอียด</dt>
+          <dd class="text-gray-900 whitespace-pre-wrap">{{ detail.remark ?? "-" }}</dd>
+        </dl>
+
+        <!-- มติ/วันที่ (4 คอลัมน์) -->
+        <dl class="mt-4 grid grid-cols-[210px_1fr_210px_1fr] gap-x-6 gap-y-3">
+          <dt class="text-gray-600 font-semibold">มติการประชุมครั้งที่</dt>
+          <dd class="text-gray-900">{{ meetingNo }}</dd>
+
+          <dt class="text-gray-600 font-semibold">วันที่ประชุม</dt>
+          <dd class="text-gray-900">{{ meetingDateTH }}</dd>
+        </dl>
+
+        <!-- ปีเริ่ม/สิ้นสุด (4 คอลัมน์) -->
+        <dl class="mt-2 grid grid-cols-[210px_1fr_210px_1fr] gap-x-6 gap-y-3">
+          <dt class="text-gray-600 font-semibold">ปีที่เริ่มต้น (พ.ศ.)</dt>
+          <dd class="text-gray-900">{{ startYear }}</dd>
+
+          <dt class="text-gray-600 font-semibold">ปีที่สิ้นสุด (พ.ศ.)</dt>
+          <dd class="text-gray-900">{{ endYear }}</dd>
+        </dl>
+
+        <!-- ป้ายสถานะ (2 คอลัมน์) -->
+        <dl class="mt-2 grid grid-cols-[210px_1fr] gap-x-6 gap-y-3">
+          <dt class="text-gray-600 font-semibold">สถานะการเผยแพร่</dt>
+          <dd>
+            <span
+              class="inline-flex items-center text-xs px-2.5 py-1 rounded-full"
+              :class="detail.is_curriculum_published
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-[#FEF7EF] text-[#F8B15D]'"
+            >
+              {{ detail.is_curriculum_published ? "เผยแพร่" : "ไม่เผยแพร่" }}
+            </span>
+          </dd>
+
+          <dt class="text-gray-600 font-semibold">สถานะการใช้งาน</dt>
+          <dd>
+            <span
+              class="inline-flex items-center text-xs px-2.5 py-1 rounded-full"
+              :class="Number(detail.active) === 1
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'"
+            >
+              {{ Number(detail.active) === 1 ? "ใช้งาน" : "ไม่ใช้งาน" }}
+            </span>
+          </dd>
+        </dl>
+
+        <!-- ปุ่มปิด -->
+        <div class="flex justify-center pt-6">
+          <button
+            type="button"
+            @click="handleClose"
+            class="bg-[#F95668] hover:bg-[#F95668]/90 text-white px-6 py-2 rounded-full shadow transition"
+          >
+            ปิด
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref } from "vue";
+import dayjs from "dayjs";
+import "dayjs/locale/th";
+dayjs.locale("th");
+
+const props = defineProps({
+  showModal: { type: Boolean, default: false },
+  closeModal: { type: Function, required: true },
+  // รับ object เต็มมาจาก DataTable (ไม่ต้อง fetch)
+  curriculum: { type: Object, default: null },
+});
+
+const isLoading = ref(false);
+const loadError = ref("");
+
+// ย่อ reference
+const detail = computed(() => props.curriculum ?? {});
+
+// helper: วันที่ไทย
+function toThai(dateStr) {
+  if (!dateStr) return "-";
+  const d = dayjs(dateStr);
+  return d.isValid() ? d.add(543, "year").format("DD/MM/YYYY") : "-";
+}
+
+// ชื่อสถาบัน
+const collegeName = computed(() => {
+  const c = detail.value?.college;
+  if (!c) return "-";
+  const campus = c.campus ? ` (${c.campus})` : "";
+  return `${c.name ?? "-"}` + campus;
+});
+
+// คำอธิบาย (หลักสูตร)
+const description = computed(() => detail.value?.description || "-");
+
+// ระดับการศึกษา
+const degreeName = computed(() => detail.value?.degree?.name ?? "-");
+
+// ---------- แก้ตรงนี้ ----------
+const TYPE_NAME_BY_ID = {
+  1: "สมาชิกทุกประเภท",
+  2: "สมาชิกสามัญ",
+  3: "สมาชิกวิสามัญ",
+  4: "สมาชิกสมทบ",
+};
+
+const typeNames = computed(() => {
+  const v = detail.value ?? {};
+
+  // 1) มีชื่อมาแล้วเป็นออบเจ็กต์ (รองรับทั้ง v.types และ v.type)
+  const objArray =
+    (Array.isArray(v.types) && v.types.length ? v.types : null) ??
+    (Array.isArray(v.type) && typeof v.type[0] === "object" ? v.type : null);
+
+  if (objArray) {
+    const names = objArray.map(t => t?.name).filter(Boolean);
+    if (names.includes("สมาชิกทุกประเภท")) return "สมาชิกทุกประเภท";
+    return names.join(", ") || "-";
+  }
+
+  // 2) มีเป็น id: รองรับ array ของ id, สตริงคอมมา, หรือเลขเดี่ยว
+  let ids = [];
+  if (Array.isArray(v.type_ids)) {
+    ids = v.type_ids;
+  } else if (Array.isArray(v.type)) {
+    ids = v.type;
+  } else if (typeof v.type === "string") {
+    ids = v.type.split(",").map(s => Number(s.trim()));
+  } else if (typeof v.type === "number") {
+    ids = [v.type];
+  }
+
+  ids = Array.from(new Set(ids.map(n => Number(n)).filter(n => Number.isFinite(n))));
+  if (!ids.length) return "-";
+
+  if (ids.includes(1)) return "สมาชิกทุกประเภท";
+
+  const names = ids.map(id => TYPE_NAME_BY_ID[id]).filter(Boolean);
+  return names.length ? names.join(", ") : "-";
+});
+// ---------- จบการแก้ ----------
+
+// มติ/วันที่/ปี
+const meetingNo     = computed(() => detail.value?.meeting_resolution ?? detail.value?.meeting_no ?? "-");
+const meetingDateTH = computed(() => toThai(detail.value?.meeting_date));
+const startYear     = computed(() => detail.value?.start_year ?? "-");
+const endYear       = computed(() => detail.value?.end_year ?? "-");
+
+// ปิดโมดัล
+function handleClose() {
+  props.closeModal?.();
+}
+</script>
+

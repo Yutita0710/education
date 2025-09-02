@@ -362,8 +362,8 @@ const published = [
 
 const status_curriculum = [
   { id: null, name: "ทั้งหมด" },
-  { id: '1', name: "เปิด" },
-  { id: '0', name: "ปิด" },
+  { id: '1', name: "ใช้งาน" },
+  { id: '0', name: "ไม่ใช้งาน" },
 ];
 
 // ยิงค้นหา
