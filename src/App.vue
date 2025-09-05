@@ -247,7 +247,7 @@ function logout() {
   username.value = "";
   token.value = "";
 
-  router.push("");
+  router.push("/admin_education/login");
 }
 
 function toggleDropdown() {

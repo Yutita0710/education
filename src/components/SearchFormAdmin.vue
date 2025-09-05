@@ -304,8 +304,8 @@ async function fetchYears() {
     const start = Array.isArray(payload.startYears) ? payload.startYears : [];
     const end = Array.isArray(payload.endYears) ? payload.endYears : [];
 
-    startYearList.value = start.filter(only4digits).sort((a, b) => a - b);
-    endYearList.value = end.filter(only4digits).sort((a, b) => a - b);
+    startYearList.value = start.filter(only4digits).sort((a, b) => b - a);
+    endYearList.value = end.filter(only4digits).sort((a, b) => b - a);
 
     // options เปลี่ยน -> ใช้ placeholder "อ็อบเจ็กต์เดิม"
     selectedStartYear.value = START_DEFAULT;

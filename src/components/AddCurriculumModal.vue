@@ -61,7 +61,6 @@
               :reduce="(opt) => opt.name"
               :disabled="isLoading || !curriculumNameOptions.length"
               placeholder="กรุณาเลือกชื่อหลักสูตร..."
-              required
             />
           </div>
           <!-- ชื่อหลักสูตร -->
@@ -128,7 +127,6 @@
                   !(curriculumYearOptions && curriculumYearOptions.length)
                 "
                 placeholder="กรุณาเลือกปี พ.ศ."
-                required
               />
             </div>
           </div>
@@ -237,7 +235,6 @@
                 type="text"
                 class="w-full border px-4 py-2 rounded-xl"
                 placeholder="เช่น 1/2568"
-                required
               />
             </div>
             <div>
@@ -270,7 +267,6 @@
                   isLoading || !(startYearOptions && startYearOptions.length)
                 "
                 placeholder="กรุณาเลือกปี พ.ศ."
-                required
               />
             </div>
 
@@ -285,7 +281,6 @@
                 @blur="limitYear('end_year')"
                 class="w-full border px-4 py-2 rounded-xl"
                 placeholder="เช่น 2570"
-                required
                 readonly
               />
             </div>
@@ -847,12 +842,12 @@ async function saveCurriculum() {
   isLoading.value = true;
   try {
     // validation เบื้องต้น
-    if (!form.name?.trim()) {
-      await Swal.fire({ icon: "warning", title: "กรุณาเลือกชื่อหลักสูตร" });
-      return;
-    }
     if (!form.college_id) {
       await Swal.fire({ icon: "warning", title: "กรุณาเลือกชื่อสถาบัน" });
+      return;
+    }
+    if (!form.name?.trim()) {
+      await Swal.fire({ icon: "warning", title: "กรุณาเลือกชื่อหลักสูตร" });
       return;
     }
     if (!form.degree_id) {
@@ -866,13 +861,22 @@ async function saveCurriculum() {
       });
       return;
     }
-    // if (!selectedTypes.value.length) {
-    //   await Swal.fire({
-    //     icon: "warning",
-    //     title: "กรุณาเลือก 'หลักสูตรสำหรับ' อย่างน้อย 1 รายการ",
-    //   });
-    //   return;
-    // }
+    const noYear =
+      selectedCurriculumYear.value === null ||
+      selectedCurriculumYear.value === undefined;
+
+    if (noYear) {
+      await Swal.fire({
+        icon: "warning",
+        title: "กรุณาเลือก พ.ศ. หลักสูตร",
+      });
+      // โฟกัสไปที่ตัวแรกที่ยังไม่ครบ
+      if (noYear) {
+        document.getElementById("curriculum-year")?.focus();
+      }
+      return;
+    }
+
     if (!form.meeting_no?.trim()) {
       await Swal.fire({ icon: "warning", title: "กรุณากรอกมติการประชุม" });
       return;
@@ -883,6 +887,14 @@ async function saveCurriculum() {
     }
 
     const meetingDateStr = dayjs(meetingDate.value).format("YYYY-MM-DD");
+    const today = dayjs();
+    if (meetingDate.value > today) {
+      await Swal.fire({
+        icon: "warning",
+        title: "วันที่ประชุมต้องไม่เกินวันที่ปัจจุบัน",
+      });
+      return;
+    }
 
     const submitData = {
       name: form.name.trim(),
@@ -932,13 +944,13 @@ async function saveCurriculum() {
       await Swal.fire({
         icon: "warning",
         title: "บันทึกไม่สำเร็จ",
-        text: messageText || "กรุณาตรวจสอบข้อมูล",
+        text: "กรุณาตรวจสอบข้อมูล",
       });
     } else {
       await Swal.fire({
         icon: "error",
         title: "เกิดข้อผิดพลาด",
-        text: messageText || "ไม่สามารถบันทึกข้อมูลได้",
+        text: "ไม่สามารถบันทึกข้อมูลได้",
       });
     }
   } finally {

@@ -2,18 +2,11 @@
   <div class="relative">
     <!-- Header -->
     <header
-      class="bg-custom-gradient px-4 py-10 md:py-20 rounded-md mb-4 md:mb-20 flex flex-col justify-center items-center text-center shadow-md"
-    >
+      class="bg-custom-gradient px-4 py-10 md:py-20 rounded-md mb-4 md:mb-20 flex flex-col justify-center items-center text-center shadow-md">
       <div class="flex items-start px-4"></div>
       <div class="px-4 md:px-0">
-        <img
-          class="mx-auto h-20 md:h-28 mt-2"
-          src="../assets/img/tfac.ico"
-          alt=""
-        />
-        <h1
-          class="text-[#111C2D]/80 text-lg md:text-3xl font-bold drop-shadow-sm mt-4"
-        >
+        <img class="mx-auto h-20 md:h-28 mt-2" src="../assets/img/tfac.ico" alt="" />
+        <h1 class="text-[#111C2D]/80 text-lg md:text-3xl font-bold drop-shadow-sm mt-4">
           ตรวจสอบหลักสูตรการศึกษาที่ผ่านการรับรองจากสภาวิชาชีพบัญชี
         </h1>
         <p class="mt-3 text-[#0085DB] text-base md:text-xl font-semibold mb-6">
@@ -25,71 +18,37 @@
 
     <!-- Filter Section -->
     <div
-      class="bg-white rounded-[1.4rem] border shadow-lg px-4 py-4 md:px-6 md:py-5 w-full h-auto md:-mt-[8rem] md:w-[90%] mt-0 mx-auto text-[#111C2D]/80"
-    >
-      <div
-        class="flex flex-col gap-4 lg:grid lg:grid-cols-[2fr,1fr,1fr,1fr,auto] lg:gap-6 w-full"
-      >
+      class="bg-white rounded-[1.4rem] border shadow-lg px-4 py-4 md:px-6 md:py-5 w-full h-auto md:-mt-[8rem] md:w-[90%] mt-0 mx-auto text-[#111C2D]/80">
+      <div class="flex flex-col gap-4 lg:grid lg:grid-cols-[2fr,1fr,1fr,1fr,auto] lg:gap-6 w-full">
         <!-- Search Box -->
         <div class="w-full">
-          <div
-            class="relative w-full rounded-full border flex items-center px-3 py-2 space-x-2"
-          >
-            <svg
-              class="w-5 h-5 text-gray-400 flex-shrink-0"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
-              />
+          <div class="relative w-full rounded-full border flex items-center px-3 py-2 space-x-2">
+            <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
             </svg>
-            <input
-              v-model="search"
-              type="text"
-              placeholder="ค้นหาชื่อสถาบันการศึกษา/ชื่อหลักสูตร/หลักสูตร"
-              class="flex-1 min-w-0 bg-transparent placeholder-gray-400 text-gray-900 outline-none"
-            />
+            <input v-model="search" type="text" placeholder="ค้นหาชื่อสถาบันการศึกษา/ชื่อหลักสูตร/หลักสูตร"
+              class="flex-1 min-w-0 bg-transparent placeholder-gray-400 text-gray-900 outline-none" />
           </div>
         </div>
 
         <!-- Dropdown ระดับการศึกษา -->
         <div>
-          <Listbox
-            v-model="selected"
-            as="div"
-            class="relative w-full md:w-[18rem] rounded-full border"
-          >
-            <ListboxButton
-              class="relative w-full inline-flex items-center justify-between px-3 py-2"
-            >
+          <Listbox v-model="selected" as="div" class="relative w-full md:w-[18rem] rounded-full border">
+            <ListboxButton class="relative w-full inline-flex items-center justify-between px-3 py-2">
               <span class="truncate">{{
                 selected?.name || "แสดงระดับการศึกษาทั้งหมด"
               }}</span>
-              <ChevronUpDownIcon
-                class="w-5 h-5 text-gray-500"
-                aria-hidden="true"
-              />
+              <ChevronUpDownIcon class="w-5 h-5 text-gray-500" aria-hidden="true" />
             </ListboxButton>
 
             <ListboxOptions
-              class="absolute z-20 mt-2 max-h-60 w-full md:w-[18rem] overflow-auto rounded-xl bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 left-0"
-            >
-              <ListboxOption
-                v-for="degree in degrees"
-                :key="degree.id"
-                :value="degree"
-                class="relative cursor-default select-none py-2 pl-10 pr-4 hover:bg-blue-50"
-              >
+              class="absolute z-20 mt-2 max-h-60 w-full md:w-[18rem] overflow-auto rounded-xl bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 left-0">
+              <ListboxOption v-for="degree in degrees" :key="degree.id" :value="degree"
+                class="relative cursor-default select-none py-2 pl-10 pr-4 hover:bg-blue-50">
                 <span class="block truncate">{{ degree.name }}</span>
-                <span
-                  v-if="selected?.id === degree.id && selected.id !== ''"
-                  class="absolute inset-y-0 left-3 flex items-center text-blue-600"
-                >
+                <span v-if="selected?.id === degree.id && selected.id !== ''"
+                  class="absolute inset-y-0 left-3 flex items-center text-blue-600">
                   <CheckIcon class="w-5 h-5" aria-hidden="true" />
                 </span>
               </ListboxOption>
@@ -97,38 +56,22 @@
           </Listbox>
         </div>
         <div>
-          <Listbox
-            v-model="selectedStartYear"
-            :by="'id'"
-            as="div"
-            class="relative w-full md:w-[18rem] rounded-full border"
-          >
-            <ListboxButton
-              class="relative w-full inline-flex items-center justify-between px-3 py-2"
-            >
+          <Listbox v-model="selectedStartYear" :by="'id'" as="div"
+            class="relative w-full md:w-[18rem] rounded-full border">
+            <ListboxButton class="relative w-full inline-flex items-center justify-between px-3 py-2">
               <span class="truncate">{{
                 selectedStartYear.name || "แสดงปีที่เริ่มต้นทั้งหมด"
               }}</span>
-              <ChevronUpDownIcon
-                class="w-5 h-5 text-gray-500"
-                aria-hidden="true"
-              />
+              <ChevronUpDownIcon class="w-5 h-5 text-gray-500" aria-hidden="true" />
             </ListboxButton>
 
             <ListboxOptions
-              class="absolute z-20 mt-2 max-h-60 w-full md:w-[14rem] overflow-auto rounded-xl bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 left-0"
-            >
-              <ListboxOption
-                v-for="item in startyears"
-                :key="item.id"
-                :value="item"
-                class="relative cursor-default select-none py-2 pl-10 pr-4 hover:bg-blue-50"
-              >
+              class="absolute z-20 mt-2 max-h-60 w-full md:w-[14rem] overflow-auto rounded-xl bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 left-0">
+              <ListboxOption v-for="item in startyears" :key="item.id" :value="item"
+                class="relative cursor-default select-none py-2 pl-10 pr-4 hover:bg-blue-50">
                 <span class="block truncate">{{ item.name }}</span>
-                <span
-                  v-if="selectedStartYear.id === item.id"
-                  class="absolute inset-y-0 left-3 flex items-center text-blue-600"
-                >
+                <span v-if="selectedStartYear.id === item.id"
+                  class="absolute inset-y-0 left-3 flex items-center text-blue-600">
                   <CheckIcon class="w-5 h-5" aria-hidden="true" />
                 </span>
               </ListboxOption>
@@ -136,38 +79,22 @@
           </Listbox>
         </div>
         <div>
-          <Listbox
-            v-model="selectedEndYear"
-            :by="'id'"
-            as="div"
-            class="relative w-full md:w-[18rem] rounded-full border"
-          >
-            <ListboxButton
-              class="relative w-full inline-flex items-center justify-between px-3 py-2"
-            >
+          <Listbox v-model="selectedEndYear" :by="'id'" as="div"
+            class="relative w-full md:w-[18rem] rounded-full border">
+            <ListboxButton class="relative w-full inline-flex items-center justify-between px-3 py-2">
               <span class="truncate">{{
                 selectedEndYear.name || "แสดงปีที่สิ้นสุดทั้งหมด"
               }}</span>
-              <ChevronUpDownIcon
-                class="w-5 h-5 text-gray-500"
-                aria-hidden="true"
-              />
+              <ChevronUpDownIcon class="w-5 h-5 text-gray-500" aria-hidden="true" />
             </ListboxButton>
 
             <ListboxOptions
-              class="absolute z-20 mt-2 max-h-60 w-full md:w-[14rem] overflow-auto rounded-xl bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 left-0"
-            >
-              <ListboxOption
-                v-for="item in endyears"
-                :key="item.id"
-                :value="item"
-                class="relative cursor-default select-none py-2 pl-10 pr-4 hover:bg-blue-50"
-              >
+              class="absolute z-20 mt-2 max-h-60 w-full md:w-[14rem] overflow-auto rounded-xl bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 left-0">
+              <ListboxOption v-for="item in endyears" :key="item.id" :value="item"
+                class="relative cursor-default select-none py-2 pl-10 pr-4 hover:bg-blue-50">
                 <span class="block truncate">{{ item.name }}</span>
-                <span
-                  v-if="selectedEndYear.id === item.id"
-                  class="absolute inset-y-0 left-3 flex items-center text-blue-600"
-                >
+                <span v-if="selectedEndYear.id === item.id"
+                  class="absolute inset-y-0 left-3 flex items-center text-blue-600">
                   <CheckIcon class="w-5 h-5" aria-hidden="true" />
                 </span>
               </ListboxOption>
@@ -177,21 +104,11 @@
 
         <!-- ปุ่มล้างค่า -->
         <div class="flex justify-center items-center">
-          <button
-            @click="reset"
-            class="shrink-0 bg-[#F8B15D] hover:bg-[#FE7743] text-white px-6 py-3 rounded-full shadow font-medium inline-flex items-center gap-2"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              class="size-5"
-            >
-              <path
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                d="M20 8c-1.403-2.96-4.463-5-8-5a9 9 0 1 0 0 18a9 9 0 0 0 9-9m0-9v6h-6"
-              />
+          <button @click="reset"
+            class="shrink-0 bg-[#F8B15D] hover:bg-[#FE7743] text-white px-6 py-3 rounded-full shadow font-medium inline-flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="size-5">
+              <path fill="none" stroke="currentColor" stroke-width="2"
+                d="M20 8c-1.403-2.96-4.463-5-8-5a9 9 0 1 0 0 18a9 9 0 0 0 9-9m0-9v6h-6" />
             </svg>
             ล้างค่า
           </button>
@@ -209,7 +126,7 @@ import { useRouter, useRoute } from "vue-router";
 import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from '@headlessui/vue'
 import { ChevronUpDownIcon, CheckIcon } from '@heroicons/vue/24/solid'
 // ===== core =====
-const emit = defineEmits(["onSearch"]);
+const emit = defineEmits(["onSearch", "clear"]);
 const router = useRouter();
 const route = useRoute();
 
@@ -364,12 +281,7 @@ function prefillFromUrl() {
 
 // ล้างค่า
 function reset() {
-  search.value = "";
-  selected.value = null;
-  selectedStartYear.value = START_DEFAULT;
-  selectedEndYear.value = END_DEFAULT;
-  router.replace({ query: {} });
-  emitSearch();
+ emit("clear");
 }
 defineExpose({ reset });
 
@@ -381,4 +293,3 @@ onMounted(async () => {
   emitSearch(); // 4) ยิงค้นหา
 });
 </script>
-

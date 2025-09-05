@@ -29,6 +29,9 @@ importers:
       vue:
         specifier: ^3.5.18
         version: 3.5.18
+      vue-datepicker-next:
+        specifier: ^1.0.3
+        version: 1.0.3(vue@3.5.18)
       vue-router:
         specifier: ^4.5.1
         version: 4.5.1(vue@3.5.18)
@@ -811,6 +814,9 @@ packages:
   date-fns@4.1.0:
     resolution: {integrity: sha512-Ukq0owbQXxa/U3EGtsdVBkR1w7KOQ5gIBqdH2hkvknzZPYvBxb/aa6E8L7tmjFtkwZBu3UXBbjIgPo/Ez4xaNg==}
 
+  date-format-parse@0.2.7:
+    resolution: {integrity: sha512-/+lyMUKoRogMuTeOVii6lUwjbVlesN9YRYLzZT/g3TEZ3uD9QnpjResujeEqUW+OSNbT7T1+SYdyEkTcRv+KDQ==}
+
   dayjs@1.11.18:
     resolution: {integrity: sha512-zFBQ7WFRvVRhKcWoUh+ZA1g2HVgUbsZm9sbddh8EC5iv93sui8DVVz1Npvz+r6meo9VKfa8NyLWBsQK1VvIKPA==}
 
@@ -1495,6 +1501,11 @@ packages:
         optional: true
       yaml:
         optional: true
+
+  vue-datepicker-next@1.0.3:
+    resolution: {integrity: sha512-Brqjh896BJGVxP7d6tGDsPMu0SDAB8hAdtG7zWF8VIHJB21dk1VB9KgdajD9Y9uXbg+wHN0vmL7sbMPIyehQVQ==}
+    peerDependencies:
+      vue: ^3.0.0
 
   vue-router@4.5.1:
     resolution: {integrity: sha512-ogAF3P97NPm8fJsE4by9dwSYtDwXIY1nFY9T6DyQnGHd1E2Da94w9JIolpe42LJGIl0DwOHBi8TcRPlPGwbTtw==}
@@ -2250,6 +2261,8 @@ snapshots:
 
   date-fns@4.1.0: {}
 
+  date-format-parse@0.2.7: {}
+
   dayjs@1.11.18: {}
 
   debug@4.4.1:
@@ -2923,6 +2936,11 @@ snapshots:
       fsevents: 2.3.3
       jiti: 1.21.7
       yaml: 2.8.0
+
+  vue-datepicker-next@1.0.3(vue@3.5.18):
+    dependencies:
+      date-format-parse: 0.2.7
+      vue: 3.5.18
 
   vue-router@4.5.1(vue@3.5.18):
     dependencies:

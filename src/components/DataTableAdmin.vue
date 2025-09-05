@@ -81,7 +81,10 @@
           <tr
             v-for="(item, index) in curriculums"
             :key="item.id"
-            class="hover:bg-gray-50 text-gray-600"
+            :class="[
+              'hover:bg-gray-50',
+              item.active === 0 ? 'bg-gray-100 text-gray-300' : '',
+            ]"
           >
             <!-- ลำดับ -->
             <td class="border px-2 py-1 text-center">
