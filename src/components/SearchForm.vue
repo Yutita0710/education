@@ -22,7 +22,7 @@
       <div class="flex flex-col gap-4 lg:grid lg:grid-cols-[2fr,1fr,1fr,1fr,auto] lg:gap-6 w-full">
         <!-- Search Box -->
         <div class="w-full">
-          <div class="relative w-full rounded-full border flex items-center px-3 py-2 space-x-2">
+          <div class="relative w-full rounded-lg border flex items-center px-3 py-2 space-x-2">
             <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
@@ -34,7 +34,7 @@
 
         <!-- Dropdown ระดับการศึกษา -->
         <div>
-          <Listbox v-model="selected" as="div" class="relative w-full md:w-[18rem] rounded-full border">
+          <Listbox v-model="selected" as="div" class="relative w-full md:w-[18rem] rounded-lg border">
             <ListboxButton class="relative w-full inline-flex items-center justify-between px-3 py-2">
               <span class="truncate">{{
                 selected?.name || "แสดงระดับการศึกษาทั้งหมด"
@@ -57,7 +57,7 @@
         </div>
         <div>
           <Listbox v-model="selectedStartYear" :by="'id'" as="div"
-            class="relative w-full md:w-[18rem] rounded-full border">
+            class="relative w-full md:w-[18rem] rounded-lg border">
             <ListboxButton class="relative w-full inline-flex items-center justify-between px-3 py-2">
               <span class="truncate">{{
                 selectedStartYear.name || "แสดงปีที่เริ่มต้นทั้งหมด"
@@ -80,7 +80,7 @@
         </div>
         <div>
           <Listbox v-model="selectedEndYear" :by="'id'" as="div"
-            class="relative w-full md:w-[18rem] rounded-full border">
+            class="relative w-full md:w-[18rem] rounded-lg border">
             <ListboxButton class="relative w-full inline-flex items-center justify-between px-3 py-2">
               <span class="truncate">{{
                 selectedEndYear.name || "แสดงปีที่สิ้นสุดทั้งหมด"

@@ -92,9 +92,12 @@
           </thead>
           <tbody>
             <tr
-              v-for="item in colleges"
+              v-for="(item) in colleges"
               :key="item.id"
-              class="hover:bg-gray-50 text-gray-600"
+              :class="[
+                'hover:bg-gray-50',
+                item.active === 0 ? 'bg-gray-100 text-gray-300' : '',
+              ]"
             >
               <td class="border px-2 py-1 text-center">
                 {{ item.institute_group }}

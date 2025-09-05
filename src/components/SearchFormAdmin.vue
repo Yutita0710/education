@@ -26,7 +26,7 @@
       <div class="">
         <div class="order-1 w-full min-w-0">
           <div
-            class="relative w-full rounded-full border flex items-center px-3 py-2 space-x-2"
+            class="relative w-full rounded-lg border flex items-center px-3 py-2 space-x-2"
           >
             <svg
               class="w-5 h-5 text-gray-400 flex-shrink-0"
@@ -56,7 +56,7 @@
             <Listbox
               v-model="selected"
               as="div"
-              class="relative w-full rounded-full border"
+              class="relative w-full rounded-lg border"
             >
               <ListboxButton
                 class="relative w-full inline-flex items-center justify-between px-3 py-2"
@@ -93,7 +93,7 @@
               v-model="selectedStartYear"
               :by="'id'"
               as="div"
-              class="relative w-full rounded-full border"
+              class="relative w-full rounded-lg border"
             >
               <ListboxButton
                 class="relative w-full inline-flex items-center justify-between px-3 py-2"
@@ -130,7 +130,7 @@
               v-model="selectedEndYear"
               :by="'id'"
               as="div"
-              class="relative w-full rounded-full border"
+              class="relative w-full rounded-lg border"
             >
               <ListboxButton
                 class="relative w-full inline-flex items-center justify-between px-3 py-2"
@@ -166,7 +166,7 @@
             <Listbox
               v-model="curriculum_published"
               as="div"
-              class="relative w-full rounded-full border"
+              class="relative w-full rounded-lg border"
             >
               <ListboxButton
                 class="relative w-full inline-flex items-center justify-between px-3 py-2"
@@ -201,7 +201,7 @@
             <Listbox
               v-model="status"
               as="div"
-              class="relative w-full rounded-full border"
+              class="relative w-full rounded-lg border"
             >
               <ListboxButton
                 class="relative w-full inline-flex items-center justify-between px-3 py-2"

@@ -248,7 +248,17 @@
                 :auto-apply="true"
                 :locale="'th'"
                 placeholder="เลือกวันที่ (วัน/เดือน/ปี พ.ศ.)"
-              />
+              >
+                <!-- ปีใน header -->
+                <template #year="{ value }">
+                  {{ toBE(value) }}
+                </template>
+
+                <!-- ปีใน overlay เลือกปี -->
+                <template #year-overlay-value="{ value }">
+                  {{ toBE(value) }}
+                </template>
+              </VueDatePicker>
             </div>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -448,10 +458,11 @@ import { CheckIcon, ChevronUpDownIcon } from "@heroicons/vue/20/solid";
 
 import VueDatePicker from "@vuepic/vue-datepicker";
 import "@vuepic/vue-datepicker/dist/main.css";
-
 import dayjs from "dayjs";
+import buddhistEra from 'dayjs/plugin/buddhistEra'
 import "dayjs/locale/th";
-dayjs.locale("th");
+dayjs.extend(buddhistEra)
+dayjs.locale('th')
 
 import {
   addEducation,
@@ -565,29 +576,33 @@ const realTypeIds = computed(() =>
     .map((t) => t.id)
 );
 
-// type_ids ที่จะส่ง (ตัด “สมาชิกทุกประเภท” ออก)
-const payloadTypeIds = computed(() => {
-  const allId = allTypeId.value; // ปกติ = 1
-  const selRaw = selectedTypes.value || [];
+// const payloadTypeIds = computed(() => {
+//   const sel = (selectedTypes.value || []).map(Number).filter(Number.isFinite);
 
-  // ไม่เลือกอะไรเลย
-  if (!Array.isArray(selRaw) || selRaw.length === 0) return [];
+//   if (!sel.length) return [];
 
-  // มีเลือก "สมาชิกทุกประเภท" → ถือว่าเลือกทั้งหมด ส่ง [1] อย่างเดียว
-  if (allId != null && selRaw.includes(allId)) return [allId];
+//   const allId = allTypeId.value;
+//   const real = realTypeIds.value;
 
-  // ไม่ได้เลือก 1 → ส่งตามที่เลือก
-  // (แปลงเป็น number, ตัดค่าซ้ำ กัน edge case)
-  const uniq = Array.from(new Set(selRaw.map(Number)));
-  return uniq;
-});
+//   const hasAll = allId != null && sel.includes(allId);
+//   const allRealSelected = real.length && real.every((id) => sel.includes(id));
+
+//   if (hasAll || allRealSelected) {
+//     return [allId]; // เลือกทุกประเภท → ส่งแค่ 1
+//   }
+
+//   const uniqSorted = Array.from(new Set(sel.filter((id) => id !== allId))).sort((a, b) => a - b);
+//   return uniqSorted;
+// });
+
 
 /* =========================
  * 6) Helper & UI utils
  * ========================= */
-const formatToThai = (date) =>
-  date ? dayjs(date).add(543, "year").format("DD/MM/YYYY") : "";
+const formatToThai = (date) => (date ? dayjs(date).format("DD/MM/BBBB") : "");
 
+// helper กันพลาดกรณีค่ามาเป็น string
+const toBE = (v) => (isNaN(+v) ? v : +v + 543);
 function buildAutoDescription() {
   const typeName = selectedCurriculumType.value?.name?.toString().trim() || "";
   const yearBE = Number.isFinite(selectedCurriculumYear.value)
@@ -637,20 +652,24 @@ const payloadTypeText = computed(() => {
 
   if (!sel.length) return "";
 
-  const allId = allTypeId.value; // id ของตัวเลือก "สมาชิกทุกประเภท" (เช่น 1)
-  const real = realTypeIds.value; // id ของตัวเลือกย่อยจริง (เช่น [2,3,4])
+  const allId = allTypeId.value;      // เช่น 1
+  const real = realTypeIds.value;     // เช่น [2, 3, 4]
 
   const hasAll = allId != null && sel.includes(allId);
   const allRealSelected = real.length && real.every((id) => sel.includes(id));
 
-  // ถ้าเลือก "สมาชิกทุกประเภท" หรือเลือกครบทุกตัวเลือกย่อย → ใช้ id ของตัวเลือกย่อยทั้งหมด
-  const ids =
-    hasAll || allRealSelected ? real : sel.filter((id) => id !== allId); // ตัด allId ออกถ้าเผลอปนมา
+  // ✅ ถ้าเลือกสมาชิกทุกประเภท หรือเลือกครบทุกประเภทย่อย → return "1"
+  if (hasAll || allRealSelected) {
+    return String(allId); // 👉 "1"
+  }
 
-  // กันค่าซ้ำและเรียงน้อย→มาก เพื่อให้เก็บสวย ๆ
-  const uniqSorted = Array.from(new Set(ids)).sort((a, b) => a - b);
-  return uniqSorted.join(",");
+  // ไม่ได้เลือก 1 และไม่ได้เลือกครบทุกประเภท → ส่งเฉพาะที่เลือก
+  const uniqSorted = Array.from(new Set(sel.filter((id) => id !== allId))).sort(
+    (a, b) => a - b
+  );
+  return uniqSorted.join(","); // 👉 เช่น "2,3"
 });
+
 /* =========================
  * 7) Data fetchers
  * ========================= */
