@@ -189,9 +189,9 @@
 </template>
 
 <script setup>
-import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import Swal from "sweetalert2";
+import { ref } from "vue";
 
 const router = useRouter();
 const username = ref("");
@@ -242,7 +242,7 @@ async function login() {
         timerProgressBar: true,
       });
 
-      router.push("/admin/curriculum");
+      router.push("/admin_education/curriculum");
     } else {
       // แสดงข้อความผิดพลาด
       Swal.fire({

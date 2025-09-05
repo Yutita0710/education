@@ -38,7 +38,7 @@ const routes = [
     meta: { breadcrumb: "หลักสูตร" },
   },
   {
-    path: "/login",
+    path: "/admin_education/login",
     name: "login",
     component: Login,
     meta: {
@@ -47,7 +47,7 @@ const routes = [
     },
   },
   {
-    path: "/admin/curriculum",
+    path: "/admin_education/curriculum",
     name: "admin-curriculum",
     component: AdminCurriculumList,
     beforeEnter: async (to, from, next) => {
@@ -66,13 +66,13 @@ const routes = [
         });
 
         // ไปหน้า login (ซ่อน navbar อัตโนมัติถ้า meta.hideNavbar = true)
-        next("/login");
+        next("/admin_education/login");
       }
     },
     meta: { requiresAuth: true, breadcrumb: "จัดการหลักสูตร" },
   },
   {
-    path: "/admin/College/add",
+    path: "/admin_education/College/add",
     name: "add-College",
     component: AddCollegeAdmin,
     beforeEnter: async (to, from, next) => {
@@ -85,7 +85,7 @@ const routes = [
           text: "กรุณาเข้าสู่ระบบใหม่",
           confirmButtonColor: "#3B82F6",
         });
-        next("/login");
+        next("/admin_education/login");
       }
     },
     meta: { requiresAuth: true, breadcrumb: "เพิ่มสถาบัน" },

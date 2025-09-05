@@ -3,7 +3,7 @@
     <ul class="flex space-x-3 items-center">
       <li>
         <router-link
-          to="/admin/curriculum"
+          to="/admin_education/curriculum"
           class="flex items-center space-x-2 text-gray-700"
         >
           <svg

@@ -36,10 +36,9 @@
     <div class="w-auto md:px-10">
       <!-- ✅ แสดง DataTable และ Pagination เฉพาะเมื่อมีข้อมูล -->
       <div v-if="tableData.length > 0">
-        <DataTable
+        <DataTableAdmin
           :curriculums="tableData"
           :meta="meta"
-          :isAdmin="true"
           :total="total"
           @refreshData="fetchData"
         />
@@ -103,8 +102,8 @@ import { getEducationPaginated } from "@/services/apiService";
 import { computed } from "vue";
 import SearchFormAdmin from "@/components/SearchFormAdmin.vue";
 import AddCurriculumModal from "@/components/AddCurriculumModal.vue";
-import DataTable from "@/components/DataTable.vue";
 import PaginationBar from "@/components/PaginationBar.vue";
+import DataTableAdmin from "@/components/DataTableAdmin.vue";
 
 const isAdmin = !!localStorage.getItem("token");
 const route = useRoute();

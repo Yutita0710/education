@@ -64,6 +64,16 @@
             >
               รายละเอียด
             </th>
+            <th
+              class="border px-2 py-[0.7rem] whitespace-nowrap w-[30px] font-bold"
+            >
+              สถานะ
+            </th>
+            <th
+              class="border px-2 py-[0.7rem] whitespace-nowrap w-[30px] font-bold"
+            >
+              จัดการ
+            </th>
           </tr>
         </thead>
 
@@ -87,7 +97,7 @@
                   : ""
               }}
 
-              <!-- <span
+              <span
                 v-if="item.college"
                 class="inline-flex items-center text-xs px-2.5 py-1 rounded-full ml-2"
                 :class="
@@ -97,13 +107,13 @@
                 "
               >
                 {{ item.college.active ? "ใช้งาน" : "ไม่ใช้งาน" }}
-              </span> -->
+              </span>
             </td>
 
             <!-- ชื่อหลักสูตร -->
             <td class="border px-2 py-1">
               {{ item.name || "" }}
-              <!-- <span
+              <span
                 class="inline-flex items-center text-xs px-2.5 py-1 rounded-full ml-2"
                 :class="
                   item.is_curriculum_published
@@ -112,7 +122,7 @@
                 "
               >
                 {{ item.is_curriculum_published ? "เผยแพร่" : "ไม่เผยแพร่" }}
-              </span> -->
+              </span>
             </td>
 
             <!-- คำอธิบายหลักสูตร -->
@@ -140,17 +150,123 @@
 
             <!-- หมายเหตุ -->
             <td class="border px-2 py-1">{{ item.remark || "" }}</td>
+
+            <!-- สถานะ -->
+            <td class="border px-2 py-1 text-center">
+              <span
+                class="inline-flex items-center text-xs px-2.5 py-1 rounded-full"
+                :class="
+                  item.active
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-red-100 text-red-800'
+                "
+              >
+                {{ item.active ? "ใช้งาน" : "ไม่ใช้งาน" }}
+              </span>
+            </td>
+
+            <!-- จัดการ -->
+            <td class="border px-2 py-1">
+              <div class="flex flex-row gap-2 items-center justify-center">
+                <!-- View Detail -->
+                <div class="relative inline-block group">
+                  <button
+                    @click.stop="openDetailModal(item)"
+                    :aria-describedby="`tt-view-${item.id}`"
+                    class="inline-flex items-center bg-[#0085DB] text-white w-10 h-10 rounded-full hover:bg-blue-500 transition justify-center"
+                    type="button"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" class="size-7">
+                      <path
+                        d="M4.5 12.5C7.5 6 16.5 6 19.5 12.5"
+                        stroke="#fff"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                      <path
+                        d="M12 16a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"
+                        stroke="#fff"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </button>
+                  <div
+                    :id="`tt-view-${item.id}`"
+                    role="tooltip"
+                    class="pointer-events-none absolute z-50 left-1/2 -translate-x-1/2 top-full mt-2 whitespace-nowrap rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white opacity-0 invisible transition-opacity duration-200 group-hover:opacity-100 group-hover:visible"
+                  >
+                    View detail
+                    <span
+                      class="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"
+                    ></span>
+                  </div>
+                </div>
+
+                <!-- Edit -->
+                <div class="relative inline-block group">
+                  <button
+                    @click.stop="openEditModal(item)"
+                    :aria-describedby="`tt-edit-${item.id}`"
+                    class="inline-flex items-center bg-[#F8B15D] text-white w-10 h-10 rounded-full hover:bg-orange-500 transition justify-center"
+                    type="button"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke-width="1.5"
+                      stroke="currentColor"
+                      class="size-6"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+                      />
+                    </svg>
+                  </button>
+                  <div
+                    :id="`tt-edit-${item.id}`"
+                    role="tooltip"
+                    class="pointer-events-none absolute z-50 left-1/2 -translate-x-1/2 top-full mt-2 whitespace-nowrap rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white opacity-0 invisible transition-opacity duration-200 group-hover:opacity-100 group-hover:visible"
+                  >
+                    Edit
+                    <span
+                      class="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"
+                    ></span>
+                  </div>
+                </div>
+              </div>
+            </td>
           </tr>
         </tbody>
       </table>
     </div>
   </div>
 
-  
+  <!-- Modal แก้ไข -->
+  <EditCurriculumModal
+    :showModal="showEditModal"
+    :curriculum="selectedCurriculum"
+    :closeModal="closeEditModal"
+    @refresh-data="handleRefreshData"
+  />
+
+  <!-- Modal รายละเอียด -->
+  <DetailCurriculumModal
+    :showModal="showDetailModal"
+    :curriculum="detailCurriculum"
+    :closeModal="closeDetailModal"
+  />
 </template>
 
 <script setup>
-import { ref,  onMounted } from "vue"; // ✅ เพิ่ม onMounted
+import { ref, computed, onMounted } from "vue"; // ✅ เพิ่ม onMounted
+import EditCurriculumModal from "./EditCurriculumModal.vue";
+import DetailCurriculumModal from "./DetailCurriculumModal.vue"; // ✅ ถ้าใช้โมดัลรายละเอียด
 import { getTypes } from "@/services/apiService";
 
 // props: เปลี่ยน default เป็น null
@@ -160,7 +276,30 @@ const props = defineProps({
   total: { type: Number, default: 0 },
 });
 
+// ---------------------- Edit modal ----------------------
+const showEditModal = ref(false);
+const selectedCurriculum = ref(null);
+function openEditModal(item) {
+  selectedCurriculum.value = { ...item };
+  showEditModal.value = true;
+}
+function closeEditModal() {
+  showEditModal.value = false;
+  selectedCurriculum.value = null;
+}
+const handleRefreshData = (e) => emit("refreshData", e);
 
+// ---------------------- Detail modal ----------------------
+const showDetailModal = ref(false);
+const detailCurriculum = ref(null);
+function openDetailModal(item) {
+  detailCurriculum.value = { ...item };
+  showDetailModal.value = true;
+}
+function closeDetailModal() {
+  showDetailModal.value = false;
+  detailCurriculum.value = null;
+}
 
 // ---------------------- ประเภทสมาชิก (mapping) ----------------------
 const TYPE_ALL_NAME = "สมาชิกทุกประเภท";

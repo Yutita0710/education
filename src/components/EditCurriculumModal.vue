@@ -42,7 +42,7 @@
               class="font-[15px]"
               v-model="selectedCollege"
               :options="colleges"
-              label="name"
+              label="label"
               :reduce="(c) => c.id"
               placeholder="กรุณาเลือกสถาบัน..."
               :disabled="isLoading"
@@ -666,9 +666,21 @@ async function fetchDegrees() {
 }
 
 async function fetchColleges() {
-  const params = { sort: "id", order: "ASC", search: search.value.trim() };
-  const res = await getCollegesPaginated(params);
-  colleges.value = res?.data?.data || [];
+  try {
+    const params = { sort: "id", order: "ASC", search: search.value.trim() };
+    const res = await getCollegesPaginated(params);
+    const rows = res.data?.data || [];
+    colleges.value = rows.map((c) => ({
+      ...c,
+      label: [c.name, (c.campus ?? "").trim()].filter(Boolean).join("  "),
+    }));
+  } catch (err) {
+    console.error("getCollegesPaginated error:", err);
+    await notifyError(
+      "ไม่สามารถโหลดข้อมูลสถาบันการศึกษา",
+      "กรุณาลองใหม่อีกครั้ง"
+    );
+  }
 }
 
 /* =========================

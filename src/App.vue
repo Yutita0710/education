@@ -247,7 +247,7 @@ function logout() {
   username.value = "";
   token.value = "";
 
-  router.push("/login");
+  router.push("");
 }
 
 function toggleDropdown() {

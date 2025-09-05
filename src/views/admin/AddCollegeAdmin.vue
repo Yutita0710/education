@@ -41,7 +41,7 @@
           class="w-full border-collapse border border-gray-300 text-sm sm:text-base"
         >
           <thead>
-            <tr class="bg-[#E2EDFC]">
+            <tr class="bg-[#E2EDFC] font-bold">
               <th
                 class="border px-2 py-[0.7rem] font-bold whitespace-nowrap w-[40px]"
               >

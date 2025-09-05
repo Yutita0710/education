@@ -41,13 +41,11 @@
               ชื่อสถาบัน <span class="text-red-500">*</span>
             </label>
             <v-select
-              class="font-[15px]"
               v-model="selectedCollege"
               :options="colleges"
-              label="name"
-              :reduce="(college) => college.id"
-              placeholder="กรุณาเลือกระดับการศึกษา..."
-              required
+              label="label"
+              :reduce="(c) => c.id"
+              placeholder="กรุณาเลือกสถาบัน..."
             />
           </div>
           <!-- ชื่อหลักสูตร -->
@@ -180,7 +178,7 @@
           <!-- หลักสูตรสำหรับ -->
           <div>
             <label class="block font-bold mb-1">
-              หลักสูตรสำหรับ 
+              หลักสูตรสำหรับ
               <!-- <span class="text-red-500">*</span> -->
             </label>
 
@@ -640,22 +638,19 @@ function notifyError(title, text) {
 }
 
 const payloadTypeText = computed(() => {
-  const sel = (selectedTypes.value || [])
-    .map(Number)
-    .filter(Number.isFinite);
+  const sel = (selectedTypes.value || []).map(Number).filter(Number.isFinite);
 
   if (!sel.length) return "";
 
-  const allId = allTypeId.value;      // id ของตัวเลือก "สมาชิกทุกประเภท" (เช่น 1)
-  const real  = realTypeIds.value;    // id ของตัวเลือกย่อยจริง (เช่น [2,3,4])
+  const allId = allTypeId.value; // id ของตัวเลือก "สมาชิกทุกประเภท" (เช่น 1)
+  const real = realTypeIds.value; // id ของตัวเลือกย่อยจริง (เช่น [2,3,4])
 
   const hasAll = allId != null && sel.includes(allId);
-  const allRealSelected = real.length && real.every(id => sel.includes(id));
+  const allRealSelected = real.length && real.every((id) => sel.includes(id));
 
   // ถ้าเลือก "สมาชิกทุกประเภท" หรือเลือกครบทุกตัวเลือกย่อย → ใช้ id ของตัวเลือกย่อยทั้งหมด
-  const ids = (hasAll || allRealSelected)
-    ? real
-    : sel.filter(id => id !== allId); // ตัด allId ออกถ้าเผลอปนมา
+  const ids =
+    hasAll || allRealSelected ? real : sel.filter((id) => id !== allId); // ตัด allId ออกถ้าเผลอปนมา
 
   // กันค่าซ้ำและเรียงน้อย→มาก เพื่อให้เก็บสวย ๆ
   const uniqSorted = Array.from(new Set(ids)).sort((a, b) => a - b);
@@ -748,7 +743,11 @@ async function fetchColleges() {
   try {
     const params = { sort: "id", order: "ASC", search: search.value.trim() };
     const res = await getCollegesPaginated(params);
-    colleges.value = res.data?.data || [];
+    const rows = res.data?.data || [];
+    colleges.value = rows.map((c) => ({
+      ...c,
+      label: [c.name, (c.campus ?? "").trim()].filter(Boolean).join("  "),
+    }));
   } catch (err) {
     console.error("getCollegesPaginated error:", err);
     await notifyError(

@@ -24,7 +24,7 @@
         </svg>
       </button>
 
-      <h2 class="text-xl font-bold text-center mb-4">
+      <h2 class="text-xl font-bold text-center mb-16">
         รายละเอียดหลักสูตร
       </h2>
 
@@ -35,7 +35,7 @@
       </div>
 
       <!-- Content -->
-      <div v-else>
+      <div class="px-14 space-y-6" v-else>
         <!-- แถวทั่วไป (2 คอลัมน์) -->
         <dl class="grid grid-cols-[210px_1fr] gap-x-6 gap-y-3">
           <dt class="text-gray-600 font-semibold">ชื่อสถาบัน</dt>
