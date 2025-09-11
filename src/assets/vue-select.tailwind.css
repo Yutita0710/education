@@ -12,7 +12,7 @@
 }
 
 .vs__actions {
-  @apply text-gray-500;
+  @apply text-gray-200;
 }
 
 
@@ -44,6 +44,13 @@
 }
 
 /* ใช้ CSS ปกติสำหรับ font-size ที่ Tailwind ไม่มี */
+/* .vs__placeholder {
+  font-size: 15px;
+  color: #b2b3b4;
+} */
+.vs__search::placeholder,
 .vs__placeholder {
+  color: #9ca3af;
+  opacity: 1;
   font-size: 15px;
 }

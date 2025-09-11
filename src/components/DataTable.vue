@@ -12,107 +12,80 @@
       </p>
     </div>
 
-    <!-- ตาราง -->
-    <div
-      class="overflow-y-auto md:overflow-y-hidden border border-gray-300 rounded-lg"
-    >
+    <div class="overflow-y-auto md:overflow-y-hidden border border-gray-300 rounded-lg">
       <table class="w-full border-collapse sm:text-base">
         <thead>
           <tr class="bg-[#E2EDFC]">
-            <th
-              class="border px-2 py-[0.7rem] whitespace-nowrap w-[50px] font-bold"
-            >
+            <th class="border px-2 py-[0.7rem] whitespace-nowrap w-[50px] font-bold">
               ลำดับ
             </th>
-            <th
-              class="border px-2 py-[0.7rem] whitespace-nowrap w-[200px] font-bold"
-            >
-              ชื่อสถาบันการศึกษา
+
+            <!-- ชื่อสถาบัน -->
+            <th class="border px-2 py-[0.7rem] whitespace-nowrap w-[200px] font-bold">
+                ชื่อสถาบัน
             </th>
-            <th
-              class="border px-2 py-[0.7rem] whitespace-nowrap w-[250px] font-bold"
-            >
-              ชื่อหลักสูตร
+
+            <!-- ชื่อหลักสูตร -->
+            <th class="border px-2 py-[0.7rem] whitespace-nowrap w-[250px] font-bold">
+                ชื่อหลักสูตร
             </th>
-            <th
-              class="border px-2 py-[0.7rem] whitespace-nowrap w-[200px] font-bold"
-            >
+
+            <!-- หลักสูตร (คำอธิบาย) -->
+            <th class="border px-2 py-[0.7rem] whitespace-nowrap w-[200px] font-bold">
               หลักสูตร
             </th>
-            <th
-              class="border px-2 py-[0.7rem] whitespace-nowrap w-[100px] font-bold"
-            >
-              ระดับการศึกษา
+
+            <!-- ระดับการศึกษา -->
+            <th class="border px-2 py-[0.7rem] whitespace-nowrap w-[100px] font-bold">
+                ระดับการศึกษา
             </th>
-            <th
-              class="border px-2 py-[0.7rem] whitespace-nowrap w-[100px] font-bold"
-            >
+
+            <!-- หลักสูตรสำหรับ -->
+            <th class="border px-2 py-[0.7rem] whitespace-nowrap w-[100px] font-bold">
               หลักสูตรสำหรับ
             </th>
+
+            <!-- ปีที่เริ่มต้น -->
             <th
               class="border px-2 py-[0.7rem] whitespace-nowrap w-[50px] font-bold"
             >
-              ปีเริ่มต้น
+                ปีที่เริ่มต้น
             </th>
-            <th
-              class="border px-2 py-[0.7rem] whitespace-nowrap w-[50px] font-bold"
-            >
-              ปีสิ้นสุด
+
+            <!-- ปีที่สิ้นสุด -->
+            <th class="border px-2 py-[0.7rem] whitespace-nowrap w-[50px] font-bold">
+                ปีที่สิ้นสุด
             </th>
-            <th
-              class="border px-2 py-[0.7rem] whitespace-nowrap w-[100px] font-bold"
-            >
+
+            <th class="border px-2 py-[0.7rem] whitespace-nowrap w-[100px] font-bold">
               รายละเอียด
             </th>
           </tr>
         </thead>
 
-        <tbody>
+        <tbody v-if="Array.isArray(rows) && rows.length > 0">
           <tr
-            v-for="(item, index) in curriculums"
-            :key="item.id"
+            v-for="(item, index) in rows"
+            :key="item.id ?? index"
             class="hover:bg-gray-50 text-gray-600"
           >
             <!-- ลำดับ -->
             <td class="border px-2 py-1 text-center">
-              {{ meta.per_page * (meta.current_page - 1) + index + 1 }}
+              {{ (Number(meta.per_page)||0) * ((Number(meta.current_page)||1) - 1) + index + 1 }}
             </td>
 
             <!-- ชื่อสถาบัน -->
             <td class="border px-2 py-1">
               {{
                 item.college
-                  ? item.college.name +
-                    (item.college.campus ? ` ${item.college.campus}` : "")
+                  ? item.college.name + (item.college.campus ? ` ${item.college.campus}` : "")
                   : ""
               }}
-
-              <!-- <span
-                v-if="item.college"
-                class="inline-flex items-center text-xs px-2.5 py-1 rounded-full ml-2"
-                :class="
-                  item.college.active
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-red-100 text-red-800'
-                "
-              >
-                {{ item.college.active ? "ใช้งาน" : "ไม่ใช้งาน" }}
-              </span> -->
             </td>
 
             <!-- ชื่อหลักสูตร -->
             <td class="border px-2 py-1">
               {{ item.name || "" }}
-              <!-- <span
-                class="inline-flex items-center text-xs px-2.5 py-1 rounded-full ml-2"
-                :class="
-                  item.is_curriculum_published
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-[#FEF7EF] text-[#F8B15D]'
-                "
-              >
-                {{ item.is_curriculum_published ? "เผยแพร่" : "ไม่เผยแพร่" }}
-              </span> -->
             </td>
 
             <!-- คำอธิบายหลักสูตร -->
@@ -130,7 +103,7 @@
               {{ renderTypes(item) }}
             </td>
 
-            <!-- ปีเริ่มต้น / สิ้นสุด -->
+            <!-- ปีที่เริ่มต้น / สิ้นสุด -->
             <td class="border px-2 py-1 text-center">
               {{ item.start_year || "" }}
             </td>
@@ -139,89 +112,95 @@
             </td>
 
             <!-- หมายเหตุ -->
-            <td class="border px-2 py-1">{{ item.remark || "" }}</td>
+            <td class="border px-2 py-1">
+              {{ item.remark || "" }}
+            </td>
+          </tr>
+        </tbody>
+
+        <tbody v-else>
+          <tr>
+            <td colspan="9" class="text-center text-gray-500 py-6">ไม่พบข้อมูล</td>
           </tr>
         </tbody>
       </table>
     </div>
   </div>
-
-  
 </template>
 
 <script setup>
-import { ref,  onMounted } from "vue"; // ✅ เพิ่ม onMounted
-import { getTypes } from "@/services/apiService";
+import { ref, computed, onMounted } from 'vue'
+import { getTypes } from '@/services/apiService'
 
-// props: เปลี่ยน default เป็น null
 const props = defineProps({
   curriculums: { type: Array, required: true },
   meta: { type: Object, required: true },
   total: { type: Number, default: 0 },
-});
+  loading: { type: Boolean, default: false },
+  // ✅ รับคีย์ sort/order จากพาเรนต์ เพื่อแสดงลูกศรถูกคอลัมน์
+  order: { type: String, default: 'ASC' },
+  isAdmin: { type: Boolean, default: false },
+})
+const emit = defineEmits(['refresh'])
 
-
+const rows = computed(() => (Array.isArray(props.curriculums) ? props.curriculums : []))
 
 // ---------------------- ประเภทสมาชิก (mapping) ----------------------
-const TYPE_ALL_NAME = "สมาชิกทุกประเภท";
-const typeLookup = ref({}); // { id: name }
-const typeAllId = ref(null); // id ของ "สมาชิกทุกประเภท"
+const TYPE_ALL_NAME = 'สมาชิกทุกประเภท'
+const typeLookup = ref({}) // { id: name }
+const typeAllId = ref(null) // id ของ "สมาชิกทุกประเภท"
 
 async function loadTypeLookup() {
   try {
-    const res = await getTypes();
-    const list = Array.isArray(res?.data?.data) ? res.data.data : [];
-    const active = list.filter((t) => Number(t.active) === 1);
+    const res = await getTypes()
+    const list = Array.isArray(res?.data?.data) ? res.data.data : []
+    const active = list.filter((t) => Number(t.active) === 1)
     typeLookup.value = Object.fromEntries(
-      active.map((t) => [Number(t.id), String(t.type_name)])
-    );
-    typeAllId.value =
-      active.find((t) => t.type_name === TYPE_ALL_NAME)?.id ?? 1;
+      active.map((t) => [Number(t.id), String(t.type_name || t.name)])
+    )
+    typeAllId.value = active.find((t) => (t.type_name || t.name) === TYPE_ALL_NAME)?.id ?? 1
   } catch (e) {
-    console.error("getTypes error:", e);
+    console.error('getTypes error:', e)
   }
 }
-onMounted(loadTypeLookup); // ✅ เรียกหลัง import แล้ว
+onMounted(loadTypeLookup)
 
 function normalizeIds(val) {
-  if (Array.isArray(val))
-    return val.map((n) => Number(n)).filter(Number.isFinite);
-  if (typeof val === "string")
+  if (Array.isArray(val)) return val.map(Number).filter(Number.isFinite)
+  if (typeof val === 'string')
     return val
-      .split(/[,\uFF0C\u3001\s]+/)
-      .map((s) => Number(s.trim()))
-      .filter(Number.isFinite);
-  if (typeof val === "number") return [val];
-  return [];
+      .split(/[ ,、，\uFF0C\u3001]+/)
+      .map((s) => Number(String(s).trim()))
+      .filter(Number.isFinite)
+  if (typeof val === 'number') return [val]
+  return []
 }
 
 function renderTypes(item) {
-  // 1) ถ้ามาเป็น objects [{id,name}]
+  // 1) objects
   if (Array.isArray(item.types) && item.types.length) {
     const names = item.types
-      .map((t) => t?.name || typeLookup.value[Number(t?.id)])
-      .filter(Boolean);
-    if (!names.length) return "";
-    if (names.includes(TYPE_ALL_NAME)) return TYPE_ALL_NAME;
-    return [...new Set(names)].join(", ");
+      .map((t) => t?.name || t?.type_name || typeLookup.value[Number(t?.id)])
+      .filter(Boolean)
+    if (!names.length) return ''
+    if (names.includes(TYPE_ALL_NAME)) return TYPE_ALL_NAME
+    return [...new Set(names)].join(', ')
   }
-  // 2) ถ้ามี ids (type_ids) หรือ field type
-  let ids = [];
+  // 2) ids (type_ids) / type
+  let ids = []
   if (Array.isArray(item.type_ids) && item.type_ids.length) {
-    ids = normalizeIds(item.type_ids);
+    ids = normalizeIds(item.type_ids)
   } else if (item.type != null) {
-    ids = normalizeIds(item.type);
-    if (!ids.length && typeof item.type === "string") {
-      // เผื่อ API ส่งเป็นชื่ออยู่แล้ว
-      if (item.type.includes("สมาชิก")) return item.type;
+    ids = normalizeIds(item.type)
+    if (!ids.length && typeof item.type === 'string') {
+      if (item.type.includes('สมาชิก')) return item.type
     }
   }
-  if (!ids.length) return "";
-  const allId = Number(typeAllId.value ?? 1);
-  if (ids.includes(allId)) return TYPE_ALL_NAME;
-  return ids
-    .map((id) => typeLookup.value[id])
-    .filter(Boolean)
-    .join(", ");
+  if (!ids.length) return ''
+  const allId = Number(typeAllId.value ?? 1)
+  if (ids.includes(allId)) return TYPE_ALL_NAME
+  return ids.map((id) => typeLookup.value[id]).filter(Boolean).join(', ')
 }
+
+
 </script>

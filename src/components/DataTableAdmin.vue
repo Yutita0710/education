@@ -27,7 +27,7 @@
             <th
               class="border px-2 py-[0.7rem] whitespace-nowrap w-[200px] font-bold"
             >
-              ชื่อสถาบันการศึกษา
+              ชื่อสถาบัน
             </th>
             <th
               class="border px-2 py-[0.7rem] whitespace-nowrap w-[250px] font-bold"
@@ -52,12 +52,12 @@
             <th
               class="border px-2 py-[0.7rem] whitespace-nowrap w-[50px] font-bold"
             >
-              ปีเริ่มต้น
+              ปีที่เริ่มต้น
             </th>
             <th
               class="border px-2 py-[0.7rem] whitespace-nowrap w-[50px] font-bold"
             >
-              ปีสิ้นสุด
+              ปีที่สิ้นสุด
             </th>
             <th
               class="border px-2 py-[0.7rem] whitespace-nowrap w-[100px] font-bold"
@@ -77,13 +77,13 @@
           </tr>
         </thead>
 
-        <tbody>
+        <tbody v-if="Array.isArray(curriculums) && curriculums.length > 0">
           <tr
             v-for="(item, index) in curriculums"
             :key="item.id"
             :class="[
               'hover:bg-gray-50',
-              item.active === 0 ? 'bg-gray-100 text-gray-300' : '',
+              item.college.active === 0 || item.active === 0 ? 'bg-gray-100 text-gray-300' : '',
             ]"
           >
             <!-- ลำดับ -->
@@ -143,7 +143,7 @@
               {{ renderTypes(item) }}
             </td>
 
-            <!-- ปีเริ่มต้น / สิ้นสุด -->
+            <!-- ปีที่เริ่มต้น / สิ้นสุด -->
             <td class="border px-2 py-1 text-center">
               {{ item.start_year || "" }}
             </td>
@@ -246,52 +246,77 @@
             </td>
           </tr>
         </tbody>
+        <tbody v-else>
+          <tr>
+            <td :colspan="9" class="text-center text-gray-500 py-6">
+              ไม่พบข้อมูล
+            </td>
+          </tr>
+        </tbody>
       </table>
     </div>
   </div>
 
   <!-- Modal แก้ไข -->
   <EditCurriculumModal
-    :showModal="showEditModal"
-    :curriculum="selectedCurriculum"
-    :closeModal="closeEditModal"
-    @refresh-data="handleRefreshData"
-  />
+  v-if="showEditModal"
+  :key="selectedCurriculum?.id ?? 'new'" 
+  :showModal="showEditModal"
+  :curriculum="selectedCurriculum"
+  :closeModal="closeEditModal"
+  @refresh-data="handleRefreshData"
+/>
 
   <!-- Modal รายละเอียด -->
   <DetailCurriculumModal
     :showModal="showDetailModal"
     :curriculum="detailCurriculum"
     :closeModal="closeDetailModal"
+    @request-edit="openEditFromDetail"
   />
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue"; // ✅ เพิ่ม onMounted
+import { ref, onMounted } from "vue"; // ✅ เพิ่ม onMounted
 import EditCurriculumModal from "./EditCurriculumModal.vue";
 import DetailCurriculumModal from "./DetailCurriculumModal.vue"; // ✅ ถ้าใช้โมดัลรายละเอียด
 import { getTypes } from "@/services/apiService";
 
+const emit = defineEmits(["refresh", "refreshData"]);
 // props: เปลี่ยน default เป็น null
 const props = defineProps({
   curriculums: { type: Array, required: true },
   meta: { type: Object, required: true },
   total: { type: Number, default: 0 },
+  isAdmin: { type: Boolean, default: false },
+  loading: { type: Boolean, default: false },
 });
 
-// ---------------------- Edit modal ----------------------
+/// ---------------------- Edit modal ----------------------
 const showEditModal = ref(false);
 const selectedCurriculum = ref(null);
+
 function openEditModal(item) {
   selectedCurriculum.value = { ...item };
   showEditModal.value = true;
 }
+
+// ✅ เรียกจาก DetailCurriculumModal
+function openEditFromDetail(curr) {
+  showDetailModal.value = false;
+  selectedCurriculum.value = { ...(curr || detailCurriculum.value || {}) };
+  showEditModal.value = true;
+}
+
 function closeEditModal() {
   showEditModal.value = false;
   selectedCurriculum.value = null;
 }
-const handleRefreshData = (e) => emit("refreshData", e);
 
+const handleRefreshData = (e) => {
+  emit("refreshData", e);
+  emit("refresh", e);
+};
 // ---------------------- Detail modal ----------------------
 const showDetailModal = ref(false);
 const detailCurriculum = ref(null);

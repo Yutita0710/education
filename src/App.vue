@@ -1,7 +1,7 @@
 <template>
   <div class="bg-white min-h-screen flex flex-col">
     <!-- Navbar -->
-    <nav v-if="isAdmin" class="bg-custom-gradient sticky top-0 z-[60]">
+    <nav v-if="showNavbar" class="bg-custom-gradient sticky top-0 z-[60]">
       <div
         class="flex flex-row items-center justify-between mx-auto px-3 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4"
       >
@@ -107,7 +107,7 @@
 
     <!-- Tabs -->
     <nav
-      v-if="isAdmin"
+      v-if="showNavbar"
       class="bg-white backdrop-blur shadow-md border-b border-gray-200 sticky top-[56px] z-[50] md:top-[90px]"
     >
       <div class="mx-auto px-3 sm:px-4">
@@ -158,7 +158,7 @@
                           : 'text-slate-500 hover:text-slate-900'
                       "
                     >
-                      จัดการข้อมูลสถาบันการศึกษา
+                      จัดการข้อมูลสถาบัน
                     </a>
                   </router-link>
                 </li>
@@ -177,7 +177,7 @@
     </nav>
 
     <!-- Breadcrumb บนมือถือ -->
-    <nav v-if="isAdmin" class="p-3 sm:p-4 md:hidden">
+    <nav v-if="showNavbar" class="p-3 sm:p-4 md:hidden">
       <Breadcrumb />
     </nav>
 
@@ -210,6 +210,15 @@ const username = ref(localStorage.getItem("username") || "");
 const token = ref(localStorage.getItem("token") || "");
 const isDropdownOpen = ref(false);
 const dropdownRef = ref(null);
+const sessionValid = computed(() => {
+  // reactive: อ้าง token.value เพื่อกระตุ้น render ใหม่เมื่อ token เปลี่ยน
+  if (!token.value) return false;
+  const expiry = Number(localStorage.getItem("expiry") || 0);
+  return !expiry || Date.now() < expiry;
+});
+const showNavbar = computed(
+  () => sessionValid.value && route.meta?.hideNavbar !== true
+);
 const isAdmin = computed(() => !!token.value);
 
 console.log("isAdmin:", isAdmin);
@@ -242,12 +251,12 @@ window.addEventListener("storage", (e) => {
 function logout() {
   localStorage.removeItem("token");
   localStorage.removeItem("username");
-
+localStorage.removeItem("expiry");
   // อัพเดท reactive values
   username.value = "";
   token.value = "";
 
-  router.push("/admin_education/login");
+  router.push("/admin/login");
 }
 
 function toggleDropdown() {
@@ -259,12 +268,16 @@ const closeDropdown = (event) => {
     isDropdownOpen.value = false;
   }
 };
+const syncAuth = () => {
+  username.value = localStorage.getItem("username") || "";
+  token.value = localStorage.getItem("token") || "";
+  isDropdownOpen.value = false;
+};
 
 onMounted(() => {
-  document.addEventListener("click", closeDropdown);
+  window.addEventListener("auth-changed", syncAuth);
 });
-
 onUnmounted(() => {
-  document.removeEventListener("click", closeDropdown);
+  window.removeEventListener("auth-changed", syncAuth);
 });
 </script>

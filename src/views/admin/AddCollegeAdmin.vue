@@ -30,7 +30,7 @@
               clip-rule="evenodd"
             />
           </svg>
-          เพิ่มข้อมูลสถาบันการศึกษา
+          เพิ่มข้อมูลสถาบัน
         </button>
       </div>
 
@@ -50,7 +50,7 @@
               <th
                 class="border px-2 py-[0.7rem] font-bold whitespace-nowrap w-[400px]"
               >
-                ชื่อสถาบันการศึกษา
+                ชื่อสถาบัน
               </th>
               <th
                 class="border px-2 py-[0.7rem] font-bold whitespace-nowrap w-[200px]"
@@ -73,11 +73,7 @@
               >
                 จำนวนหลักสูตร
               </th>
-              <th
-                class="border px-2 py-[0.7rem] font-bold whitespace-nowrap w-[50px]"
-              >
-                สถานะการเผยแพร่
-              </th>
+
               <th
                 class="border px-2 py-[0.7rem] font-bold whitespace-nowrap w-[50px]"
               >
@@ -90,9 +86,9 @@
               </th>
             </tr>
           </thead>
-          <tbody>
+          <tbody v-if="Array.isArray(colleges) && colleges.length > 0">
             <tr
-              v-for="(item) in colleges"
+              v-for="item in colleges"
               :key="item.id"
               :class="[
                 'hover:bg-gray-50',
@@ -116,20 +112,7 @@
               >
                 {{ item.curriculumCount || 0 }}
               </td>
-              <td
-                class="border px-2 py-1 text-center items-center justify-center"
-              >
-                <span
-                  :class="
-                    item.is_published
-                      ? 'bg-[#09C97F1A] text-[#09C97F]'
-                      : 'bg-[#FB977D1A] text-[#FB977D]'
-                  "
-                  class="rounded-full px-3 py-1 text-xs readonly font-medium"
-                >
-                  {{ item.is_published === true ? "เผยแพร่" : "ไม่เผยแพร่" }}
-                </span>
-              </td>
+
               <td
                 class="border px-2 py-1 text-center items-center justify-center"
               >
@@ -251,8 +234,8 @@
         @changePage="onPageChange"
         @changePerPage="onPerPageChange"
       />
-      
     </div>
+
     <!-- Add Modal -->
     <AddCollegeModal
       :showModal="showCollegeModal"
@@ -270,10 +253,11 @@
 
     <!-- Detail Modal -->
     <DetailCollegeModal
-      :key="selectedCollegeDetail.id"
+      v-if="showCollegeDetailModal && selectedCollegeDetail"
+      :key="selectedCollegeDetail?.id"
       :showModal="showCollegeDetailModal"
       :closeModal="closeCollegeDetailModal"
-      :collegeId="selectedCollegeDetail.id"
+      :collegeId="selectedCollegeDetail?.id ?? null"
       @close="closeCollegeDetailModal"
     />
   </div>
@@ -291,268 +275,331 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from "vue";
+import { ref, reactive, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-
-import PaginationBar from "@/components/PaginationBar.vue";
 import {
   getCollegesPaginated,
   countCurriculum,
-  countryList,
-  provinceList,
+  provinceList,   // ← ใช้ API provinces
+  countryList,    // ← ใช้ API countries
 } from "@/services/apiService";
+
 import SearchCollegeAdmin from "@/components/SearchCollegeAdmin.vue";
+import PaginationBar from "@/components/PaginationBar.vue";
 import AddCollegeModal from "@/components/AddCollegeModal.vue";
 import EditCollegeModal from "@/components/EditCollegeModal.vue";
 import DetailCollegeModal from "@/components/DetailCollegeModal.vue";
 
 const route = useRoute();
 const router = useRouter();
-const showCollegeModal = ref(false);
-const showEditModal = ref(false);
-const selectedCollege = ref({});
+
+/** ---------- master maps (ประเทศ/จังหวัด) ---------- */
+const countriesRef = ref({ byId: new Map() });
+const provincesRef = ref({ byId: new Map() });
+const mastersLoaded = ref(false);
+
+function seedIdNameMap(target, list = []) {
+  for (const it of list) {
+    // รองรับหลายรูปแบบ field ของ API
+    const id =
+      it?.id ?? it?.country_id ?? it?.province_id ?? it?.value ?? it?.code ?? it?.pk;
+    const name =
+      it?.name_th ?? it?.thai_name ?? it?.nameTh ?? it?.name ?? it?.label ?? it?.title;
+    if (id != null && name) {
+      const keyNum = Number(id);
+      target.set(Number.isFinite(keyNum) ? keyNum : String(id), String(name));
+    }
+  }
+}
+
+async function loadMastersOnce() {
+  if (mastersLoaded.value) return;
+  try {
+    const [provRes, countryRes] = await Promise.all([provinceList(), countryList()]);
+    const provinces = provRes?.data?.data ?? provRes?.data ?? [];
+    const countries = countryRes?.data?.data ?? countryRes?.data ?? [];
+    provincesRef.value.byId.clear();
+    countriesRef.value.byId.clear();
+    seedIdNameMap(provincesRef.value.byId, provinces);
+    seedIdNameMap(countriesRef.value.byId, countries);
+  } finally {
+    mastersLoaded.value = true; // ป้องกันโหลดซ้ำ แม้ error จะ fallback เป็นค่าว่าง
+  }
+}
+
+/** ---------- counts (จาก /education/countCurriculums) ---------- */
+const countsRef = ref({ byId: new Map(), byName: new Map() });
+const countsLoaded = ref(false);
+
+function normalizeNameKey(s) {
+  return String(s ?? "").trim().toLowerCase();
+}
+function hydrateCounts(list = []) {
+  countsRef.value.byId.clear();
+  countsRef.value.byName.clear();
+  for (const it of list) {
+    const id = Number(it?.college_id);
+    const name = normalizeNameKey(it?.college_name);
+    const count = Number(it?.curriculum_count);
+    const safe = Number.isFinite(count) ? count : 0;
+    if (Number.isFinite(id)) countsRef.value.byId.set(id, safe);
+    if (name) countsRef.value.byName.set(name, safe);
+  }
+  countsLoaded.value = true;
+}
+
+/** ✅ ค่ามาตรฐาน (sort = field, order = direction) */
 const DEFAULTS = {
   page: 1,
   limit: 10,
-  search: "",
   sort: "id",
   order: "ASC",
-  province: "",
+  search: "",
   country: "",
-  is_published: "", // "", "true"|"false"|"1"|"0" ก็จะถูกแปลงต่อภายหลัง
-  status: "", // "", "0"|"1"
+  province: "",
+  status: "",
 };
 
-const state = ref({ ...DEFAULTS });
+/** ---------- state ที่ sync กับ URL ---------- */
+const state = reactive({ ...DEFAULTS });
 
-/** helper: แปลงค่าใด ๆ -> boolean | undefined */
-function toBoolish(v) {
-  if (v === true || v === "true" || v === 1 || v === "1") return true;
-  if (v === false || v === "false" || v === 0 || v === "0") return false;
-  return undefined; // หมายถึง "ไม่กรอง"
-}
-
-/** อ่านค่าจาก URL -> state (คงค่า raw ไว้ให้ URL สวย ๆ) */
-function fromQuery(q) {
-  return {
-    page: Number(q.page ?? DEFAULTS.page),
-    limit: Number(q.limit ?? DEFAULTS.limit),
-    search: String(q.search ?? DEFAULTS.search),
-
-    // ป้องกันสลับค่า: คุมให้อยู่ในโดเมนที่ถูก
-    sort: String(q.sort ?? DEFAULTS.sort) || "id",
-    order:
-      String(q.order ?? DEFAULTS.order).toUpperCase() === "DESC"
-        ? "DESC"
-        : "ASC",
-
-    province: String(q.province ?? DEFAULTS.province),
-    country: String(q.country ?? DEFAULTS.country),
-
-    // เก็บ “raw string” ไว้ใน state เพื่อสะท้อนบน URL เช่นเดิม
-    // แต่ตอนยิง API จะไปแปลงเป็น boolean/number อีกที
-    is_published: q.is_published !== undefined ? String(q.is_published) : "", // "", "true"|"false"|"1"|"0"
-    status: q.status === "0" || q.status === "1" ? q.status : "",
-  };
-}
-
-/** สร้าง query สำหรับ URL (อย่าทิ้ง false/0) */
-function updateRoute(partial, { replace = false } = {}) {
-  const next = { ...state.value, ...partial };
-  const query = Object.fromEntries(
-    Object.entries(next).filter(
-      ([, v]) => v !== "" && v !== null && v !== undefined
-    )
-  );
-  replace ? router.replace({ query }) : router.push({ query });
-}
-
-/** แปลง state -> พารามิเตอร์ที่จะส่งเข้า API (ชนิดข้อมูลถูกต้อง) */
-function toApiParams(s) {
-  const out = {
-    page: s.page,
-    limit: s.limit,
-    search: (s.search || "").trim(),
-    // คุมไม่ให้สลับกัน
-    sort: s.sort || "id",
-    order: (s.order || "ASC").toUpperCase() === "DESC" ? "DESC" : "ASC",
-
-    country: s.country || undefined,
-    province: s.province || undefined,
-
-    status: s.status === "" ? undefined : Number(s.status), // "0"|"1" -> 0|1
-  };
-
-  // is_published -> true/false/undefined
-  const b = toBoolish(s.is_published);
-  if (b !== undefined) out.is_published = b;
-
-  // ลบค่าว่าง/undefined ออกจาก payload ที่จะส่ง
-  return Object.fromEntries(
-    Object.entries(out).filter(
-      ([, v]) => v !== "" && v !== undefined && v !== null
-    )
-  );
-}
-
-// ---------- fetch ----------
+/** ---------- ตาราง + meta ---------- */
 const isLoading = ref(false);
-const colleges = ref([]);
-const totalItems = ref(0);
-const totalPages = ref(1);
-async function fetchData() {
-  isLoading.value = true;
-  try {
-    const apiParams = toApiParams(state.value);
-
-    // ✅ ดึง college + curriculum count พร้อมกัน
-    const [res, countRes, countryRes, provinceRes] = await Promise.all([
-      getCollegesPaginated(apiParams.page, apiParams.limit, apiParams),
-      countCurriculum(apiParams),
-      countryList(), // ⬅️ ดึงประเทศเพิ่มเข้ามา
-      provinceList(), // ⬅️ ดึงจังหวัดเพิ่มเข้ามา
-    ]);
-
-    // ---- จัดการ college list ----
-    const payload = res?.data ?? {};
-    const list = Array.isArray(payload.data) ? payload.data : [];
-    const meta = payload.meta ?? {};
-
-    totalItems.value = Number(meta.total) || 0;
-    totalPages.value =
-      Number(meta.last_page) ||
-      Math.max(1, Math.ceil(totalItems.value / (state.value.limit || 10)));
-
-    // ---- จัดการจำนวนหลักสูตร ----
-    const countsArr = countRes?.data?.data ?? countRes?.data ?? [];
-
-    /** @type {Record<number, number>} */
-    const countsMap = {};
-    for (const cur of countsArr) {
-      const id = Number(cur.college_id ?? cur.id);
-      const cnt = Number(cur.curriculum_count ?? cur.count ?? 0);
-      if (Number.isFinite(id)) countsMap[id] = Number.isFinite(cnt) ? cnt : 0;
-    }
-    // console.log("Counts Map by college_id:", countsMap);
-    // ------- Countries -> Map(id -> name) -------
-    const countries = (countryRes?.data ?? []).map((c) => ({
-      id: String(c.id ?? c.country_id ?? c.code),
-      // รองรับหลาย key ของชื่อประเทศ
-      name: (
-        c.name ??
-        c.name_th ??
-        c.en_name ??
-        c.country_name ??
-        c.code ??
-        ""
-      ).trim(),
-    }));
-    const countryMap = new Map(countries.map((c) => [c.id, c.name]));
-    const resolveCountryName = (v) => {
-      if (v === null || v === undefined || v === "") return "";
-      const key = String(v).trim();
-      return countryMap.get(key) ?? key; // ถ้าไม่ตรง id ใน map ให้แสดงค่าที่มาจาก API ตรง ๆ
-    };
-
-    // ------- Provinces -> Map(id -> name) -------
-    const provinces = (provinceRes?.data ?? []).map((p) => ({
-      id: String(p.id ?? p.province_id),
-      // เลือกชื่อไทยก่อน ถ้าไม่มีค่อย fallback อังกฤษ/ชื่อทั่วไป
-      name: (p.name_th ?? p.name_en ?? p.province_name ?? p.name ?? "").trim(),
-    }));
-    const provinceMap = new Map(provinces.map((p) => [p.id, p.name]));
-
-    const resolveProvinceName = (v) => {
-      // v อาจเป็น "1" (ไทย -> id เป็น string/number) หรือเป็น free-text (ต่างประเทศ)
-      if (v === null || v === undefined || v === "") return "";
-      const key = String(v).trim();
-      return provinceMap.get(key) ?? key; // ไม่พบ id ใน map → แสดง free-text ตามที่เก็บมา
-    };
-    // ---- ประกอบรายการสำหรับตาราง (flatten parent + children) ----
-    colleges.value = list.map((item) => {
-      const idNum = Number(item.id);
-      return {
-        ...item,
-        // ✅ ใช้ id ของแถวนั้นแม่น ๆ
-        curriculumCount: Number.isFinite(idNum) ? countsMap[idNum] ?? 0 : 0,
-        countryName: resolveCountryName(item.country),
-        provinceName: resolveProvinceName(item.province),
-      };
-    });
-  } catch (e) {
-    console.error("fetchData error:", e);
-    colleges.value = [];
-    totalItems.value = 0;
-    totalPages.value = 1;
-  } finally {
-    isLoading.value = false;
-  }
-}
-
-onMounted(() => {
-  state.value = fromQuery(route.query);
-  fetchData();
+const rows = ref([]);
+const meta = ref({
+  total: 0,
+  per_page: DEFAULTS.limit,
+  current_page: DEFAULTS.page,
+  last_page: 1,
 });
 
-watch(
-  () => route.query,
-  (q) => {
-    state.value = fromQuery(q);
-    fetchData(); // ดึงใหม่อัตโนมัติทุกครั้งที่ URL เปลี่ยน
-  }
-);
+const colleges = computed(() => rows.value);
+const totalItems = computed(() => Number(meta.value?.total ?? rows.value.length));
 
-// ---------- รับค่าจากลูก (SearchCollegeAdmin.vue) ----------
-function onFiltersUpdate(payload) {
-  // payload เป็น “raw” (เช่น is_published อาจเป็น true/false หรือ "")
-  // เราจะเก็บลง URL แบบ raw ก่อน แล้วค่อยแปลงตอน fetch
-  updateRoute({ ...payload }, { replace: true });
-}
-
-// ---------- pagination ----------
-function onPageChange(newPage) {
-  updateRoute({ page: newPage });
-}
-function onPerPageChange(newLimit) {
-  updateRoute({ limit: newLimit, page: 1 });
-}
-
-// ---------- modal ----------
-function closeEditModal() {
-  showEditModal.value = false;
-  selectedCollege.value = {};
-  fetchData(); // รีโหลดข้อมูลหลังจากแก้ไข
-}
-
-function closeCollegeModal() {
-  showCollegeModal.value = false;
-  fetchData();
-} // closeCollegeModal
-
-function openEditcollegeModal(item) {
-  console.log("Opening edit modal for:", item);
-  selectedCollege.value = { ...item }; // ✅ ใช้ตัวแปรนี้แทน selectedCurriculum
-  showEditModal.value = true;
-}
-
-// ---------- Detail Modal ----------
+/** ---------- modal & selections ---------- */
+const showCollegeModal = ref(false);
+const showEditModal = ref(false);
 const showCollegeDetailModal = ref(false);
-const selectedCollegeDetail = ref({});
+const selectedCollege = ref(null);
+const selectedCollegeDetail = ref(null);
 
-function openDetailCollegeModal(item) {
-  if (!item || !item.id) {
-    console.warn("openDetailCollegeModal: item ไม่มี id", item);
-    return;
+/** ---------- utils ---------- */
+const toInt = (v, d) => {
+  const n = parseInt(v, 10);
+  return Number.isFinite(n) ? n : d;
+};
+const toOpt = (v) => {
+  if (v == null) return "";
+  const s = String(v).trim();
+  return s === "" || s.toLowerCase() === "undefined" || s.toLowerCase() === "null"
+    ? ""
+    : s;
+};
+const isNumericId = (v) =>
+  typeof v === "number" || (typeof v === "string" && /^\d+$/.test(v.trim()));
+
+/** ---------- URL -> state ---------- */
+function syncFromUrl() {
+  const q = route.query;
+  state.page = toInt(q.page, DEFAULTS.page);
+  state.limit = toInt(q.limit, DEFAULTS.limit);
+  state.sort = toOpt(q.sort) || DEFAULTS.sort;
+  state.order = toOpt(q.order) || DEFAULTS.order;
+  state.search = toOpt(q.search) || DEFAULTS.search;
+  state.country = toOpt(q.country) || DEFAULTS.country;
+  state.province = toOpt(q.province) || DEFAULTS.province;
+  state.status = toOpt(q.status) || DEFAULTS.status;
+}
+
+/** ---------- state -> query ---------- */
+function buildQuery(partial = {}) {
+  const s = { ...state, ...partial };
+  const allDefault =
+    s.page === DEFAULTS.page &&
+    s.limit === DEFAULTS.limit &&
+    s.sort === DEFAULTS.sort &&
+    s.order === DEFAULTS.order &&
+    (s.search || "") === "" &&
+    (s.country || "") === "" &&
+    (s.province || "") === "" &&
+    (s.status || "") === "";
+  if (allDefault) return {};
+  const q = {};
+  if (s.page !== DEFAULTS.page) q.page = s.page;
+  q.limit = s.limit;
+  if (s.sort !== DEFAULTS.sort) q.sort = s.sort;
+  if (s.order !== DEFAULTS.order) q.order = s.order;
+  if (s.search) q.search = s.search;
+  if (s.country) q.country = s.country;
+  if (s.province) q.province = s.province;
+  if (s.status !== "") q.status = s.status;
+  return q;
+}
+async function pushQuery(partial = {}) {
+  await router.replace({ query: buildQuery(partial) });
+}
+
+/** ---------- ช่วยแปลง id → ชื่อ ผ่าน Map ---------- */
+function resolveName(raw, mapRef) {
+  if (raw == null) return "";
+  if (typeof raw === "object") {
+    return raw.name_th ?? raw.nameTh ?? raw.name ?? raw.label ?? "";
   }
-  selectedCollegeDetail.value = { id: item.id };
-  showCollegeDetailModal.value = true;
+  if (isNumericId(raw)) {
+    const keyNum = Number(raw);
+    const keyStr = String(raw);
+    return mapRef.byId.get(keyNum) ?? mapRef.byId.get(keyStr) ?? "";
+  }
+  return String(raw);
 }
 
-function closeCollegeDetailModal() {
-  showCollegeDetailModal.value = false;
-  selectedCollegeDetail.value = {};
+/** ---------- mapCollege ---------- */
+function mapCollege(c = {}, counts = countsRef.value) {
+  const countryRaw = c.countryName ?? c.country_name ?? c.country;
+  const provinceRaw = c.provinceName ?? c.province_name ?? c.province;
+
+  const countryName = resolveName(countryRaw, countriesRef.value);
+  const provinceName = resolveName(provinceRaw, provincesRef.value);
+
+  const id = Number(c.id ?? c.college_id ?? c.collegeId);
+  const nameKey = normalizeNameKey(c.name ?? c.college_name ?? "");
+
+  // ใช้จำนวนจาก countCurriculum ก่อน ถ้ามี
+  const fromCountApi =
+    (Number.isFinite(id) ? counts.byId.get(id) : undefined) ??
+    (nameKey ? counts.byName.get(nameKey) : undefined);
+
+  const candidate =
+    (typeof fromCountApi === "number" ? fromCountApi : undefined) ??
+    Number(
+      c.curriculumCount ??
+        c.curriculum_count ??
+        c.curriculums_count ??
+        (Array.isArray(c.curriculums) ? c.curriculums.length : undefined)
+    );
+
+  const curriculumCount =
+    typeof candidate === "number" && Number.isFinite(candidate) ? candidate : 0;
+
+  return {
+    ...c,
+    countryName: countryName || " ",  // กันคอลัมน์หด
+    provinceName: provinceName || " ",
+    curriculumCount,
+  };
 }
+
+/** ---------- โหลดข้อมูล ---------- */
+let lastReqId = 0;
+async function fetchData() {
+  const reqId = ++lastReqId;
+  try {
+    isLoading.value = true;
+
+    // โหลด master (ประเทศ/จังหวัด) และ countCurriculum ให้พร้อมก่อน
+    if (!mastersLoaded.value) {
+      await loadMastersOnce();
+    }
+    if (!countsLoaded.value) {
+      try {
+        const cnt = await countCurriculum();
+        hydrateCounts(cnt?.data?.data ?? cnt?.data ?? []);
+      } catch {
+        // ถ้า error ก็ปล่อยให้ fallback = 0
+      }
+    }
+
+    const params = {
+      page: state.page,
+      limit: state.limit,
+      sort: state.sort,
+      order: state.order,
+      search: state.search || undefined,
+      country: state.country || undefined,
+      province: state.province || undefined,
+      status: state.status === "" ? undefined : Number(state.status),
+    };
+
+    const res = await getCollegesPaginated(params);
+    if (reqId !== lastReqId) return;
+
+    const dataRows = res?.data?.data ?? res?.data ?? [];
+    rows.value = dataRows.map((c) => mapCollege(c));
+
+    const m = res?.data?.meta ?? {};
+    meta.value = {
+      total: Number(m.total ?? 0),
+      per_page: Number(m.per_page ?? state.limit),
+      current_page: Number(m.current_page ?? state.page),
+      last_page:
+        Number(m.last_page) ||
+        Math.max(
+          1,
+          Math.ceil(
+            (Number(m.total ?? 0) || 0) / (Number(m.per_page ?? state.limit) || 1)
+          )
+        ),
+    };
+
+    if (state.page > meta.value.last_page) {
+      pushQuery({ page: meta.value.last_page || 1 });
+    }
+  } finally {
+    if (reqId === lastReqId) isLoading.value = false;
+  }
+}
+
+/** ---------- filters ---------- */
+function normalizeFilterFromPayload(payload = {}) {
+  return {
+    search: (payload.search ?? "").trim(),
+    country: payload.country ?? "",
+    province: payload.province ?? "",
+    status: payload.status ?? "",
+  };
+}
+function currentFiltersFromUrl() {
+  const q = route.query;
+  return {
+    search: (q.search ?? "").toString(),
+    country: (q.country ?? "").toString(),
+    province: (q.province ?? "").toString(),
+    status: (q.status ?? "").toString(),
+  };
+}
+function shallowEqual(a, b) {
+  const keys = ["search", "country", "province", "status"];
+  return keys.every((k) => String(a[k]) === String(b[k]));
+}
+function onFiltersUpdate(payload) {
+  const nextFilters = normalizeFilterFromPayload(payload);
+  const curFilters = currentFiltersFromUrl();
+  if (shallowEqual(nextFilters, curFilters)) return;
+  pushQuery({ page: 1, ...nextFilters });
+}
+
+/** ---------- handlers ---------- */
+function onPageChange(page) { pushQuery({ page }); }
+function onPerPageChange(perPage) { pushQuery({ page: 1, limit: perPage }); }
+function openEditcollegeModal(item) { selectedCollege.value = item; showEditModal.value = true; }
+function openDetailCollegeModal(item) { selectedCollegeDetail.value = item; showCollegeDetailModal.value = true; }
+function closeCollegeModal() { showCollegeModal.value = false; }
+function closeCollegeDetailModal() { showCollegeDetailModal.value = false; selectedCollegeDetail.value = null; }
+function goToCurriculum(collegeName) { router.push({ path: "/education", query: { college_name: collegeName, page: 1 } }); }
+
+/** ---------- lifecycle ---------- */
+watch(
+  () => route.fullPath,
+  () => {
+    syncFromUrl();
+    fetchData();
+  },
+  { immediate: true }
+);
 </script>
+
+
+
 
 
 <style scoped>

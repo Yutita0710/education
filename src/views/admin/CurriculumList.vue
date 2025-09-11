@@ -1,7 +1,8 @@
 <template>
   <div class="block gap-[20px] p-6 space-y-4">
+    <!-- Search Form -->
     <div class="w-auto">
-      <SearchFormAdmin @onSearch="handleSearch" />
+      <SearchFormAdmin @onSearch="handleSearch" @clear="clearSearch" />
     </div>
     <AddCurriculumModal
       :showModal="showCurriculumModal"
@@ -138,7 +139,7 @@ const meta = ref({
   last_page: 1,
 });
 const isLoading = ref(false);
-
+let reqSeq = 0;
 // ---------- utils ----------
 const toInt = (v, d) => {
   const n = parseInt(v, 10);
@@ -206,15 +207,20 @@ function buildFullQuery(partial = {}) {
   };
 }
 
-function pushQuery(partial) {
-  router.replace({ query: clean(buildFullQuery(partial)) });
+async function pushQuery(partial) {
+  await router.replace({ query: clean(buildFullQuery(partial)) });
 }
 
+const toBoolish = (v) => {
+  if (v === true || v === "true" || v === 1 || v === "1") return true;
+  if (v === false || v === "false" || v === 0 || v === "0") return false;
+  return "";
+};
 // ---------- โหลดข้อมูล ----------
 async function fetchData() {
   try {
     isLoading.value = true;
-
+    const mySeq = ++reqSeq;
     const filters = {
       sort: state.value.sort,
       order: state.value.order,
@@ -225,12 +231,13 @@ async function fetchData() {
       degree_active: toOpt(state.value.degree_active),
       start_year: toOpt(state.value.start_year),
       end_year: toOpt(state.value.end_year),
-      curriculum_published: toOpt(state.value.curriculum_published),
+      curriculum_published: toBoolish(state.value.curriculum_published),
       meeting_resolution: toOpt(state.value.meeting_resolution),
       type: toOpt(state.value.type),
     };
 
     console.log("👉 filters:", filters);
+    console.log("👉 fetchData page/limit:", state.value.page, state.value.limit, filters);
     // ❗️ถ้า service ของคุณเป็น (page, limit, filters) ให้ใช้บรรทัดนี้แทน:
     const res = await getEducationPaginated(
       state.value.page,
@@ -238,7 +245,7 @@ async function fetchData() {
       filters
     );
     console.log(res);
-
+if (mySeq !== reqSeq) return;
     const rows = res?.data?.data ?? [];
     const m = res?.data?.meta ?? {};
 
@@ -294,36 +301,26 @@ function handleSearch(f = {}) {
   });
 }
 
+function clearSearch() {
+  // ✅ ล้าง “ทีเดียว” โดยให้ URL เป็นแหล่งความจริง → watcher จะ sync  fetch ให้อัตโนมัติ
+  router.replace({ query: {} });
+}
 // ---------- lifecycle ----------
-onMounted(() => {
-  syncStateFromQuery();
-  // ถ้ามีค่าไม่พึงประสงค์ -> เขียน URL ใหม่ให้สะอาด
-  const q = route.query;
-  const hasBad = ["curriculum_published", "meeting_resolution"].some(
-    (k) =>
-      typeof q[k] === "string" &&
-      ["undefined", "null", ""].includes(q[k].trim().toLowerCase())
-  );
-
-  if (!Object.keys(q).length || hasBad) {
-    pushQuery({}); // จะผ่าน clean() ตัดค่าว่างออก
-  } else {
-    fetchData();
-  }
-});
 
 function closeCurriculumModal() {
   showCurriculumModal.value = false;
   fetchData();
 }
 
+
 // เปลี่ยน URL (รวม back/forward) → sync + fetch
 watch(
-  () => route.query,
+  () => route.fullPath,
   () => {
     syncStateFromQuery();
     fetchData();
-  }
+  },
+  { immediate: true }
 );
 </script>
 

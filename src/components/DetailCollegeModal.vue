@@ -24,9 +24,7 @@
         </svg>
       </button>
 
-      <h2 class="text-xl font-bold text-center mb-4">
-        รายละเอียดสถาบันการศึกษา
-      </h2>
+      <h2 class="text-xl font-bold text-center mb-4">รายละเอียดสถาบัน</h2>
 
       <!-- Loading -->
       <div v-if="isLoading" class="py-8 text-center text-gray-500">
@@ -55,9 +53,7 @@
         <div class="mb-4 flex flex-row gap-4">
           <div>
             <label class="block text-gray-700 mb-2">
-              <span class="flex items-center gap-1 font-bold"
-                >ชื่อสถาบันการศึกษา</span
-              >
+              <span class="flex items-center gap-1 font-bold">ชื่อสถาบัน</span>
             </label>
           </div>
           <div>
@@ -81,13 +77,11 @@
           </div>
         </div>
 
-        <!-- กลุ่มสถาบันการศึกษา (ตาราง) -->
+        <!-- กลุ่มสถาบัน (ตาราง) -->
         <div class="mb-6 flex flex-col gap-4">
           <div>
             <label class="block text-gray-700 mb-2">
-              <span class="flex items-center gap-1 font-bold"
-                >กลุ่มสถาบันการศึกษา</span
-              >
+              <span class="flex items-center gap-1 font-bold">กลุ่มสถาบัน</span>
             </label>
           </div>
           <div>
@@ -98,7 +92,7 @@
                 <thead class="font-medium text-gray-700 uppercase bg-[#E2EDFC]">
                   <tr>
                     <th scope="col" class="px-6 py-3">ลำดับ</th>
-                    <th scope="col" class="px-6 py-3">ชื่อสถาบันการศึกษา</th>
+                    <th scope="col" class="px-6 py-3">ชื่อสถาบัน</th>
                     <th scope="col" class="px-6 py-3">วิทยาเขต</th>
                   </tr>
                 </thead>
@@ -108,7 +102,7 @@
                     class="odd:bg-white even:bg-gray-50 border-b border-gray-200"
                   >
                     <td colspan="3" class="px-6 py-4 text-center text-gray-400">
-                      - ไม่มีกลุ่มย่อย -
+                      - ไม่พบกลุ่มสถาบัน -
                     </td>
                   </tr>
 
@@ -179,29 +173,6 @@
           </div>
         </div>
 
-        <!-- สถานะการเผยแพร่ -->
-        <div class="mb-4 flex flex-row gap-4">
-          <div>
-            <label class="block text-gray-700 mb-2">
-              <span class="flex items-center gap-1 font-bold"
-                >สถานะการเผยแพร่</span
-              >
-            </label>
-          </div>
-          <div>
-            <span
-              class="text-xs font-medium me-2 px-2.5 py-0.5 rounded-full"
-              :class="
-                detail.is_published
-                  ? 'bg-green-100 text-green-800'
-                  : 'bg-gray-100 text-gray-700'
-              "
-            >
-              {{ detail.is_published ? "เผยแพร่" : "ไม่เผยแพร่" }}
-            </span>
-          </div>
-        </div>
-
         <!-- สถานะการใช้งาน -->
         <div class="mb-4 flex flex-row gap-4">
           <div>
@@ -216,7 +187,7 @@
               class="text-xs font-medium me-2 px-2.5 py-0.5 rounded-full"
               :class="
                 Number(detail.active) === 1
-                  ? 'bg-purple-100 text-purple-800'
+                  ? 'bg-green-100 text-green-800'
                   : 'bg-red-100 text-red-800'
               "
             >
@@ -274,7 +245,6 @@ const detail = reactive({
   provinceName: "",
   curriculumCount: 0,
 
-  is_published: false,
   active: 0,
   institute_group: null,
   group: [],
@@ -386,8 +356,9 @@ async function fetchDetail() {
   if (!props.collegeId) return;
   isLoading.value = true;
   loadError.value = "";
+
   try {
-    // 1) ดึงรายละเอียดก่อน
+    // 1) ดึงรายละเอียด
     const res = await getCollegesById(props.collegeId);
     const data = res?.data?.data ?? res?.data?.item ?? res?.data ?? null;
     if (!data) throw new Error("ไม่พบข้อมูลจากเซิร์ฟเวอร์");
@@ -401,42 +372,51 @@ async function fetchDetail() {
     detail.province_name = data.province_name ?? null;
     detail.countryName = data.countryName ?? "";
     detail.provinceName = data.provinceName ?? "";
-    detail.is_published =
-      typeof data.is_published === "boolean"
-        ? data.is_published
-        : Number(data.is_published) === 1;
     detail.active = Number(data.active ?? 0) === 1 ? 1 : 0;
-    detail.institute_group = data.institute_group ?? null; // ← ต้อง set ตรงนี้
 
-    // 2) ดึง count + group พร้อมกัน (ใช้ id ของสถาบันนี้)
+    // ✅ normalize institute_group เป็นสตริง (หรือ null ถ้าไม่มี)
+    const groupId = data.institute_group != null ? String(data.institute_group) : "";
+    detail.institute_group = groupId || null;
+
+    // 2) ดึง count + group (ถ้ามี groupId)
     const [countRes, groupRes] = await Promise.all([
-      // ถ้า backend รองรับ filter จะเร็วกว่า: countCurriculum({ college_id: detail.id })
       countCurriculum({}),
-      getCollegesGrouped(detail.id),
+      groupId ? getCollegesGrouped(groupId) : Promise.resolve({ data: [] }),
     ]);
 
-    // map count
+    // สร้างแผนที่ count ต่อ college_id
     const countsArr = countRes?.data?.data ?? countRes?.data ?? [];
     const countsMap = {};
     for (const cur of countsArr) {
-      const id = Number(cur.college_id ?? cur.id);
+      // พยายามรองรับหลายฟิลด์ที่อาจมาจาก API
+      const key = Number(cur.college_id ?? cur.id ?? cur.collegeId);
       const cnt = Number(cur.curriculum_count ?? cur.count ?? 0);
-      if (Number.isFinite(id)) countsMap[id] = Number.isFinite(cnt) ? cnt : 0;
+      if (Number.isFinite(key)) countsMap[key] = Number.isFinite(cnt) ? cnt : 0;
     }
     detail.curriculumCount = countsMap[Number(detail.id)] ?? 0;
 
-    // map group
-    const rows =
+    // ดึงรายการในกลุ่ม แล้วกรองให้ตรงกับ groupId (กันกรณี backend ส่งรายการปนมา)
+    const raw =
       groupRes?.data?.data ??
       groupRes?.data?.items ??
       groupRes?.data?.rows ??
       groupRes?.data ??
       [];
-    groupColleges.value = (Array.isArray(rows) ? rows : []).map((r) => ({
-      id: r.id ?? r.code ?? null,
+    const rows = Array.isArray(raw) ? raw : [];
+
+    const filtered = groupId
+      ? rows.filter(
+          (r) => String(r.institute_group ?? r.group_id ?? r.group) === groupId
+        )
+      : [];
+
+    // ✅ แมปให้ id = college id จริง ๆ และแนบ institute_group ไว้ด้วย
+    groupColleges.value = filtered.map((r) => ({
+      id: r.id ?? null, // <-- college id
       name: r.name ?? "",
       campus: r.campus ?? "",
-      curriculumCount: countsMap[Number(r.id)] ?? 0, // optional แสดง count รายแถว
+      institute_group: String(r.institute_group ?? groupId ?? ""),
+      curriculumCount: countsMap[Number(r.id)] ?? 0,
     }));
   } catch (e) {
     console.error(e);

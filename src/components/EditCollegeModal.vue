@@ -27,7 +27,7 @@
       </button>
 
       <h2 class="text-xl font-bold text-center mb-4">
-        แก้ไขข้อมูลสถาบันการศึกษา
+        แก้ไขข้อมูลสถาบัน
       </h2>
 
       <form @submit.prevent="saveCollege" class="space-y-4">
@@ -35,27 +35,37 @@
         <div class="mb-4">
           <label class="block text-gray-700 mb-2">
             <span class="flex items-center gap-1 font-bold"
-              >ชื่อสถาบันการศึกษา <span class="text-red-500 ml-1">*</span></span
-            >
+              >ชื่อสถาบัน
+            </span>
           </label>
           <input
             v-model="form.name"
             type="text"
-            placeholder="ชื่อสถาบันการศึกษา"
-            class="w-full border-2 border-gray-200 px-4 py-3 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200 text-gray-700"
+            placeholder="ชื่อสถาบัน"
+            readonly
+            class="bg-gray-100 w-full border-2 border-gray-200 px-4 py-3 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200 text-gray-700"
           />
         </div>
 
         <!-- วิทยาเขต (แก้ได้) -->
         <div class="mb-4">
-          <label class="block text-gray-700 mb-2">
-            <span class="flex items-center gap-1 font-bold">วิทยาเขต</span>
-          </label>
+          <div class="flex items-center gap-2 mb-2">
+            <label class="block text-gray-700">
+              <span class="flex items-center gap-1 font-bold">วิทยาเขต</span>
+            </label>
+          </div>
+
           <input
             v-model.trim="form.campus"
             type="text"
-            class="w-full border-2 border-gray-200 px-4 py-3 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200 text-gray-700 placeholder-gray-400"
-            placeholder="เช่น บางเขน"
+            :readonly="lockCampus"
+            :class="[
+              'w-full border-2 border-gray-200 px-4 py-3 rounded-xl transition-all duration-200 text-gray-700 placeholder-gray-400',
+              lockCampus
+                ? 'bg-gray-100 focus:ring-0'
+                : 'focus:ring-4 focus:ring-blue-100 focus:border-blue-500',
+            ]"
+            :placeholder="lockCampus ? 'เช่น บางเขน' : 'กรอกชื่อวิทยาเขต'"
           />
         </div>
 
@@ -63,144 +73,140 @@
         <div class="mb-4">
           <label class="block text-gray-700 mb-2">
             <span class="flex items-center gap-1 font-bold"
-              >กลุ่มสถาบันการศึกษา</span
+              >กลุ่มสถาบัน</span
             >
           </label>
+
+          <!-- อ่านอย่างเดียว -->
+          <div
+            v-if="lockGroup"
+            class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-gray-100 text-gray-700"
+          >
+            {{ displayGroupName }}
+          </div>
+
+          <!-- เลือกได้ -->
           <v-select
+            v-else
             v-model="form.selectedCollege"
             :options="colleges"
             label="name"
             :reduce="(c) => String(c.id)"
-            placeholder="เลือกสถาบันการศึกษา..."
+            placeholder="เลือกสถาบัน..."
           />
         </div>
 
-        <div class="flex flex-row mb-4 gap-4">
-          <!-- ประเทศ -->
-          <div class="w-full">
-            <label class="block mb-2 font-medium text-gray-900"
-              >ประเทศ <span class="text-red-500 ml-1">*</span></label
-            >
-            <v-select
-              v-model="form.selectedCountry"
-              :options="countryOptions"
-              label="name"
-              :reduce="(c) => c.id"
-              placeholder="เลือกประเทศ"
-            />
+        <!-- ประเทศ -->
+        <div class="mb-4">
+          <label class="block mb-2 font-medium text-gray-900">
+            ประเทศ
+            <span v-if="showCountryStar" class="text-red-500 ml-1">*</span>
+          </label>
+
+          <!-- อ่านอย่างเดียว -->
+          <div
+            v-if="lockCountry"
+            class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-gray-100 text-gray-700"
+          >
+            {{ displayCountryName }}
           </div>
 
-          <!-- จังหวัด (ไทยใช้ select / ต่างประเทศใช้ input) -->
-          <div class="w-full">
-            <label class="block mb-2 font-medium text-gray-900"
-              >จังหวัด
-              <span
-                v-if="filteredProvinceOptions.length > 0"
-                class="text-red-500 ml-1"
-                >*</span
-              >
-            </label>
-            <div class="relative">
-              <v-select
-                v-if="filteredProvinceOptions.length > 0"
-                v-model="form.selectedProvince"
-                :options="filteredProvinceOptions"
-                label="name"
-                :reduce="(p) => String(p.id)"
-                placeholder="เลือกจังหวัด"
-              />
-              <input
-                v-else
-                v-model.trim="form.province"
-                type="text"
-                class="w-full border-2 border-gray-200 px-4 py-3 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200 text-gray-700 placeholder-gray-400"
-                placeholder="กรอกชื่อจังหวัด/รัฐ"
-              />
-            </div>
+          <!-- เลือกได้ -->
+          <v-select
+            v-else
+            v-model="form.selectedCountry"
+            :options="countryOptions"
+            label="name"
+            :reduce="(c) => c.id"
+            placeholder="เลือกประเทศ"
+          />
+        </div>
+
+        <!-- จังหวัด (ไทยใช้ select / ต่างประเทศใช้ input) -->
+        <div class="mb-4">
+          <label class="block mb-2 font-medium text-gray-900">
+            จังหวัด
+            <span class="text-red-500 ml-1">*</span>
+          </label>
+
+          <!-- อ่านอย่างเดียว (มีค่าจาก API) -->
+          <div
+            v-if="lockProvince"
+            class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-gray-100 text-gray-700"
+          >
+            {{ displayProvinceName }}
+          </div>
+
+          <!-- ต้องกรอก/เลือก (ไม่มีค่าจาก API) -->
+          <div v-else class="relative">
+            <!-- ยังไม่เลือกประเทศ -->
+            <input
+              v-if="!form.selectedCountry"
+              disabled
+              type="text"
+              class="w-full border-2 border-gray-200 px-4 py-3 rounded-xl text-gray-400 bg-gray-50"
+              placeholder="โปรดเลือกประเทศก่อน"
+            />
+
+            <!-- ประเทศ = ไทย -> ใช้ select จังหวัด -->
+            <v-select
+              v-else-if="isThaiSelected"
+              v-model="form.selectedProvince"
+              :options="filteredProvinceOptions"
+              label="name"
+              :reduce="(p) => String(p.id)"
+              placeholder="เลือกจังหวัด"
+            />
+
+            <!-- ประเทศ ≠ ไทย -> ใช้ input -->
+            <input
+              v-else
+              v-model.trim="form.province"
+              type="text"
+              class="w-full border-2 border-gray-200 px-4 py-3 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200 text-gray-700 placeholder-gray-400"
+              placeholder="กรอกชื่อจังหวัด/รัฐ"
+            />
           </div>
         </div>
 
-        <!-- สถานะการเผยแพร่ / การใช้งาน -->
-        <div class="flex flex-row mb-4 gap-4">
-          <div class="w-full">
-            <label class="block mb-2 font-medium text-gray-900"
-              >สถานะการเผยแพร่</label
+        <div class="mb-4">
+          <label class="block mb-2 font-medium text-gray-900"
+            >สถานะการใช้งาน</label
+          >
+          <Listbox
+            v-model="form.selectedStatus"
+            as="div"
+            class="relative w-full rounded-lg border px-2 py-[0.15rem]"
+          >
+            <ListboxButton
+              class="relative w-full inline-flex items-center justify-between px-3 py-2"
             >
-            <Listbox
-              v-model="form.selectedIspublic"
-              as="div"
-              class="relative w-full rounded-lg border px-2 py-[0.15rem]"
+              <span class="truncate">{{
+                form.selectedStatus?.name || "สถานะการใช้งาน"
+              }}</span>
+              <ChevronUpDownIcon
+                class="w-5 h-5 text-gray-500"
+                aria-hidden="true"
+              />
+            </ListboxButton>
+            <ListboxOptions
+              class="absolute z-20 mt-2 max-h-60 w-full md:w-[14rem] overflow-auto rounded-xl bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 left-0"
             >
-              <ListboxButton
-                class="relative w-full inline-flex items-center justify-between px-3 py-2"
+              <ListboxOption
+                v-for="s in statusOptions"
+                :key="s.id"
+                :value="s"
+                class="relative cursor-default select-none py-2 pl-10 pr-4 hover:bg-blue-50"
               >
-                <span class="truncate">{{
-                  form.selectedIspublic?.name || "สถานะการเผยแพร่"
-                }}</span>
-                <ChevronUpDownIcon
-                  class="w-5 h-5 text-gray-500"
-                  aria-hidden="true"
-                />
-              </ListboxButton>
-              <ListboxOptions
-                class="absolute z-20 mt-2 max-h-60 w-full md:w-[14rem] overflow-auto rounded-xl bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 left-0"
-              >
-                <ListboxOption
-                  v-for="p in ispublicOptions"
-                  :key="p.id"
-                  :value="p"
-                  class="relative cursor-default select-none py-2 pl-10 pr-4 hover:bg-blue-50"
-                >
-                  <span class="block truncate">{{ p.name }}</span>
-                  <span
-                    v-if="form.selectedIspublic?.id === p.id"
-                    class="absolute inset-y-0 left-3 flex items-center text-blue-600"
-                    ><CheckIcon class="w-5 h-5" aria-hidden="true"
-                  /></span>
-                </ListboxOption>
-              </ListboxOptions>
-            </Listbox>
-          </div>
-
-          <div class="w-full">
-            <label class="block mb-2 font-medium text-gray-900"
-              >สถานะการใช้งาน</label
-            >
-            <Listbox
-              v-model="form.selectedStatus"
-              as="div"
-              class="relative w-full rounded-lg border px-2 py-[0.15rem]"
-            >
-              <ListboxButton
-                class="relative w-full inline-flex items-center justify-between px-3 py-2"
-              >
-                <span class="truncate">{{
-                  form.selectedStatus?.name || "สถานะการใช้งาน"
-                }}</span>
-                <ChevronUpDownIcon
-                  class="w-5 h-5 text-gray-500"
-                  aria-hidden="true"
-                />
-              </ListboxButton>
-              <ListboxOptions
-                class="absolute z-20 mt-2 max-h-60 w-full md:w-[14rem] overflow-auto rounded-xl bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 left-0"
-              >
-                <ListboxOption
-                  v-for="s in statusOptions"
-                  :key="s.id"
-                  :value="s"
-                  class="relative cursor-default select-none py-2 pl-10 pr-4 hover:bg-blue-50"
-                >
-                  <span class="block truncate">{{ s.name }}</span>
-                  <span
-                    v-if="form.selectedStatus?.id === s.id"
-                    class="absolute inset-y-0 left-3 flex items-center text-blue-600"
-                    ><CheckIcon class="w-5 h-5" aria-hidden="true"
-                  /></span>
-                </ListboxOption>
-              </ListboxOptions>
-            </Listbox>
-          </div>
+                <span class="block truncate">{{ s.name }}</span>
+                <span
+                  v-if="form.selectedStatus?.id === s.id"
+                  class="absolute inset-y-0 left-3 flex items-center text-blue-600"
+                  ><CheckIcon class="w-5 h-5" aria-hidden="true"
+                /></span>
+              </ListboxOption>
+            </ListboxOptions>
+          </Listbox>
         </div>
         <!-- <div class="flex flex-row mb-8 gap-4">
           <div class="w-full">
@@ -342,11 +348,61 @@ const ispublicOptions = [
   { id: 0, value: false, name: "ไม่เผยแพร่" },
 ];
 
-const remarkOptions = [
-  { id: 1, name: "เปลี่ยนชื่อสถาบันการศึกษา" },
-  { id: 2, name: "เลิกใช้งาน" },
-  { id: 3, name: "อื่นๆ" },
-];
+const initial = reactive({
+  groupId: null,
+  countryId: null,
+  provinceId: null, // ใช้ตอนประเทศ=TH
+  provinceName: null, // ใช้ตอนประเทศ≠TH
+});
+
+const displayGroupName = computed(() => {
+  const opt = colleges.value.find(
+    (o) => String(o.id) === String(form.selectedCollege)
+  );
+  return opt?.name || "-";
+});
+const displayCountryName = computed(() => {
+  const opt = countryOptions.value.find(
+    (o) => String(o.id) === String(form.selectedCountry)
+  );
+  return opt?.name || "-";
+});
+const displayProvinceName = computed(() => {
+  if (!form.selectedCountry) return "-";
+  if (String(form.selectedCountry) === String(TH_ID.value)) {
+    const opt = filteredProvinceOptions.value.find(
+      (p) => String(p.id) === String(form.selectedProvince)
+    );
+    return opt?.name || "-";
+  }
+  return textOrNull(form.province) || "-";
+});
+
+const lockGroup = computed(() => !!initial.groupId);
+const lockCountry = computed(() => !!initial.countryId);
+const lockProvince = computed(() => {
+  if (!initial.countryId) return false; // ยังไม่รู้ประเทศ ก็ยังไม่ล็อคจังหวัด
+  // ถ้าเป็นไทย -> ต้องมี provinceId ถึงจะล็อค
+  if (String(initial.countryId) === String(TH_ID.value)) {
+    return !!initial.provinceId;
+  }
+  // ถ้าไม่ใช่ไทย -> ต้องมี provinceName ถึงจะล็อค
+  return !!textOrNull(initial.provinceName);
+});
+// helper เช็คค่าว่าง
+const isEmpty = (v) => textOrNull(v) === null;
+
+// ประเทศ: โชว์ * เมื่อ "ยังไม่มีค่า" (ไม่ต้องสน lock ก็ได้ตามที่ต้องการ)
+const showCountryStar = computed(() => isEmpty(form.selectedCountry));
+
+// จังหวัด: ให้ขึ้น * เฉพาะตอนที่ “เลือกประเทศแล้ว” แต่ “ยังไม่มีจังหวัด”
+const showProvinceStar = computed(() => {
+  if (isEmpty(form.selectedCountry)) return false; // ยังไม่เลือกประเทศ → ยังไม่ต้องขึ้น *
+  return isThaiSelected.value
+    ? isEmpty(form.selectedProvince) // ไทย → ต้องเลือกจาก select
+    : isEmpty(form.province); // ต่างประเทศ → ต้องกรอกข้อความ
+});
+
 // ------- Reactive state -------
 const isLoading = ref(false);
 const countryOptions = ref([]); // [{id,name,code}]
@@ -361,7 +417,7 @@ const form = reactive({
   selectedCountry: null,
   selectedProvince: null,
   province: "",
-  selectedCollege: null,
+  selectedCollege: "",
   selectedStatus: statusOptions[0],
   selectedIspublic: ispublicOptions[0],
 });
@@ -383,10 +439,13 @@ const isThai = (x) => {
 };
 const textOrNull = (v) => (typeof v === "string" && v.trim() ? v.trim() : null);
 
+// 🔒 ใช้คุมว่า “ล็อกเพราะมีค่าจาก API” หรือไม่
+const lockCampus = ref(false);
+
 // ------- Computed -------
 const isThaiSelected = computed(
   () => String(form.selectedCountry) === String(TH_ID.value)
-)
+);
 
 const filteredProvinceOptions = computed(() =>
   isThaiSelected.value
@@ -394,8 +453,7 @@ const filteredProvinceOptions = computed(() =>
         (p) => String(p.country_id) === String(TH_ID.value)
       )
     : []
-)
-
+);
 
 // ------- Watchers -------
 watch(
@@ -431,6 +489,20 @@ watch(
 // ------- Lifecycle -------
 onMounted(async () => {
   await bootstrapOptions();
+  if (typeof form.selectedCollege === "number") {
+    form.selectedCollege = String(form.selectedCollege);
+  }
+
+  // กรณีมีค่าเดิมมาเป็น object (เช่นทั้งแถวของ college) -> ดึง id มาเก็บ
+  // @ts-ignore
+  if (
+    form.selectedCollege &&
+    typeof form.selectedCollege === "object" &&
+    "id" in form.selectedCollege
+  ) {
+    // @ts-ignore
+    form.selectedCollege = String(form.selectedCollege.id);
+  }
 });
 
 async function bootstrapOptions() {
@@ -494,6 +566,7 @@ function clearForm() {
   form.selectedCollege = null;
   form.selectedStatus = statusOptions[0];
   form.selectedIspublic = ispublicOptions[0];
+  lockCampus.value = false;
 }
 
 function loadFormData() {
@@ -501,39 +574,47 @@ function loadFormData() {
   form.id = c.id ?? null;
   form.name = c.name ?? "";
   form.campus = c.campus ?? "";
-
-  // ประเทศ
+lockCampus.value = !!textOrNull(c.campus);
+  // ---- ประเทศ ----
   const countryId = c.country ?? c.country_id ?? c.countryCode ?? null;
   form.selectedCountry = countryId ? String(countryId) : null;
 
-  // จังหวัด
+  // ---- จังหวัด ----
   if (String(form.selectedCountry) === String(TH_ID.value)) {
-    // ถ้าไทย → ใช้ province id
     form.selectedProvince = c.province ?? c.province_id ?? null;
     form.selectedProvince = form.selectedProvince
       ? String(form.selectedProvince)
       : null;
     form.province = "";
   } else {
-    // ถ้าไม่ใช่ไทย → ให้แสดงชื่อจังหวัด/รัฐ ใน input
     form.selectedProvince = null;
     form.province = c.province_name ?? c.province ?? "";
   }
 
-  // กลุ่มสถาบัน
+  // ---- กลุ่มสถาบัน ----
   form.selectedCollege = c.institute_group ?? c.group_id ?? null;
   form.selectedCollege = form.selectedCollege
     ? String(form.selectedCollege)
     : null;
 
-  // สถานะ
+  // ---- สถานะ ----
   form.selectedStatus =
     Number(c.active) === 1 ? statusOptions[0] : statusOptions[1];
-  form.selectedIspublic = Boolean(c.is_published)
-    ? ispublicOptions[0]
-    : ispublicOptions[1];
-}
 
+  // ====== เก็บค่าเดิมจาก API ไว้ตัดสินใจล็อค ======
+  initial.countryId = form.selectedCountry;
+  initial.groupId = form.selectedCollege;
+  if (String(form.selectedCountry) === String(TH_ID.value)) {
+    initial.provinceId = form.selectedProvince;
+    initial.provinceName = null;
+  } else if (form.selectedCountry) {
+    initial.provinceId = null;
+    initial.provinceName = textOrNull(form.province);
+  } else {
+    initial.provinceId = null;
+    initial.provinceName = null;
+  }
+}
 
 function handleClose(force = false) {
   if (isLoading.value && !force) return; // กันผู้ใช้กดปิดกลางคัน แต่ allow force
@@ -546,7 +627,7 @@ async function saveCollege() {
     return;
   }
   if (!form.name.trim()) {
-    await Swal.fire({ icon: "warning", title: "กรุณากรอกชื่อสถาบันการศึกษา" });
+    await Swal.fire({ icon: "warning", title: "กรุณากรอกชื่อสถาบัน" });
     return;
   }
   if (!form.selectedCountry) {
@@ -573,7 +654,6 @@ async function saveCollege() {
     ...(isThaiSelected.value
       ? { province: String(form.selectedProvince) }
       : { province: textOrNull(form.province) }),
-    is_published: Number(form.selectedIspublic?.id) === 1,
     active: Number(form.selectedStatus?.id) === 1 ? 1 : 0,
   };
   Object.keys(payload).forEach(

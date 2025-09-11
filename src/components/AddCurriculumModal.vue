@@ -45,6 +45,8 @@
               :options="colleges"
               label="label"
               :reduce="(c) => c.id"
+              :searchable="true"
+              :clearable="false"
               placeholder="กรุณาเลือกสถาบัน..."
             />
           </div>
@@ -54,10 +56,11 @@
               ชื่อหลักสูตร <span class="text-red-500">*</span>
             </label>
             <v-select
-              class="font-[15px]"
               v-model="selectedCurriculum"
               :options="curriculumNameOptions"
               label="name"
+              :searchable="true"
+              :clearable="false"
               :reduce="(opt) => opt.name"
               :disabled="isLoading || !curriculumNameOptions.length"
               placeholder="กรุณาเลือกชื่อหลักสูตร..."
@@ -121,6 +124,8 @@
                 v-model="selectedCurriculumYear"
                 :options="curriculumYearOptions"
                 label="name"
+                :searchable="true"
+                :clearable="false"
                 :reduce="(opt) => opt.value"
                 :disabled="
                   isLoading ||
@@ -175,10 +180,22 @@
           </div>
           <!-- หลักสูตรสำหรับ -->
           <div>
-            <label class="block font-bold mb-1">
-              หลักสูตรสำหรับ
-              <!-- <span class="text-red-500">*</span> -->
-            </label>
+            <div class="flex flex-row gap-2 items-center">
+              <div>
+                <label class="block font-bold mb-1">
+                  หลักสูตรสำหรับ
+                  <span class="text-red-500">*</span>
+                </label>
+              </div>
+              <div class="mb-2">
+                <p
+                  v-if="!selectedTypes.length"
+                  class="mt-1 text-xs text-red-600"
+                >
+                  เลือกได้มากกว่า 1 ประเภท
+                </p>
+              </div>
+            </div>
 
             <ul class="flex flex-row gap-1 w-full">
               <li v-for="opt in typeOptions" :key="opt.id" class="w-full">
@@ -209,10 +226,6 @@
                 </label>
               </li>
             </ul>
-
-            <p v-if="!selectedTypes.length" class="mt-1 text-xs text-red-600">
-              เลือกได้มากกว่า 1 หลักสูตร
-            </p>
           </div>
 
           <!-- รายละเอียด -->
@@ -244,9 +257,10 @@
               <VueDatePicker
                 v-model="meetingDate"
                 :format="formatToThai"
-                :enable-time="false"
+                :enable-time-picker="false"
                 :auto-apply="true"
                 :locale="'th'"
+                :max-date="endOfToday"
                 placeholder="เลือกวันที่ (วัน/เดือน/ปี พ.ศ.)"
               >
                 <!-- ปีใน header -->
@@ -262,16 +276,18 @@
             </div>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <!-- ปีเริ่มต้น -->
+            <!-- ปีที่เริ่มต้น -->
             <div>
               <label class="block font-bold mb-1">
-                ปีเริ่มต้น (พ.ศ.) <span class="text-red-500">*</span>
+                ปีที่เริ่มต้น (พ.ศ.) <span class="text-red-500">*</span>
               </label>
               <v-select
                 class="font-[15px] flex-1 min-w-0"
                 v-model="selectedStartYear"
                 :options="startYearOptions"
                 label="name"
+                :searchable="true"
+                :clearable="false"
                 :reduce="(opt) => opt.value"
                 :disabled="
                   isLoading || !(startYearOptions && startYearOptions.length)
@@ -280,16 +296,16 @@
               />
             </div>
 
-            <!-- ปีสิ้นสุด -->
+            <!-- ปีที่สิ้นสุด -->
             <div>
               <label class="block font-bold mb-1">
-                ปีสิ้นสุด (พ.ศ.) <span class="text-red-500">*</span>
+                ปีที่สิ้นสุด (พ.ศ.) <span class="text-red-500">*</span>
               </label>
               <input
                 v-model="form.end_year"
                 type="text"
                 @blur="limitYear('end_year')"
-                class="w-full border px-4 py-2 rounded-xl"
+                class="w-full border px-4 py-2 rounded-xl bg-gray-200"
                 placeholder="เช่น 2570"
                 readonly
               />
@@ -437,13 +453,30 @@
       </div>
     </div>
   </div>
+  <DetailCurriculumModal
+    :key="detailCurriculum?.id ?? (showDetailModal ? 'open' : 'closed')"
+    :showModal="showDetailModal"
+    :curriculum="detailCurriculum"
+    :closeModal="closeDetailModal"
+    @request-edit="openEditFromDetail"
+    @refresh-data="emit('refresh-data', $event)"
+  />
+
+  <EditCurriculumModal
+    v-if="showEditModal"
+    :key="editingCurriculum?.id ?? 'new'"
+    :showModal="showEditModal"
+    :curriculum="editingCurriculum"
+    :closeModal="closeEditModal"
+    @refresh-data="handleRefreshData"
+  />
 </template>
 
 <script setup>
 /* =========================
  * 1) Imports
  * ========================= */
-import { computed, reactive, ref, watch } from "vue";
+import { computed, reactive, ref, watch, nextTick } from "vue";
 import Swal from "sweetalert2";
 import vSelect from "vue-select";
 import "vue-select/dist/vue-select.css";
@@ -459,19 +492,22 @@ import { CheckIcon, ChevronUpDownIcon } from "@heroicons/vue/20/solid";
 import VueDatePicker from "@vuepic/vue-datepicker";
 import "@vuepic/vue-datepicker/dist/main.css";
 import dayjs from "dayjs";
-import buddhistEra from 'dayjs/plugin/buddhistEra'
+import buddhistEra from "dayjs/plugin/buddhistEra";
 import "dayjs/locale/th";
-dayjs.extend(buddhistEra)
-dayjs.locale('th')
+dayjs.extend(buddhistEra);
+dayjs.locale("th");
 
 import {
   addEducation,
+  getEducationById, // 🟢 เพิ่ม
   getallYears,
   getCollegesPaginated,
   getCurriculumsListAll,
   getDegrees,
   getTypes,
 } from "@/services/apiService";
+import DetailCurriculumModal from "./DetailCurriculumModal.vue";
+import EditCurriculumModal from "./EditCurriculumModal.vue";
 
 /* =========================
  * 2) Props & Emits
@@ -483,21 +519,18 @@ const props = defineProps({
   curriculum: { type: Object, default: null },
 });
 const emit = defineEmits(["close", "refresh-data"]);
-
+const showDetailModal = ref(false);
+const detailCurriculum = ref(null);
+const showEditModal = ref(false);
+const editingCurriculum = ref(null);
 /* =========================
  * 3) Constants / Options
  * ========================= */
+// ⬇️ เพิ่มไว้ด้านบนส่วน state/helpers
+const ALL_ID = 0;
+const ALL_LABEL = "สมาชิกทุกประเภท";
+
 const DURATION_YEARS = 5; // ระยะหลักสูตร 5 ปี → end = start + 4
-
-const STATUS_OPTIONS = [
-  { id: 1, name: "ใช้งาน" },
-  { id: 0, name: "ไม่ใช้งาน" },
-];
-
-const ISPUBLIC_OPTIONS = [
-  { id: 1, value: true, name: "เผยแพร่" },
-  { id: 0, value: false, name: "ไม่เผยแพร่" },
-];
 
 const CURRICULUM_TYPE = [
   { id: 1, name: "หลักสูตร" },
@@ -514,18 +547,27 @@ const search = ref("");
 const selectedCollege = ref(null); // v-select → id
 const selectedDegree = ref(null); // Listbox → object(มี id)
 const selectedCurriculum = ref(null); // v-select → string (ชื่อหลักสูตร)
-const selectedCurriculumType = ref(null); // object จาก CURRICULUM_TYPE
+const selectedCurriculumType = ref(CURRICULUM_TYPE[0]); // object จาก CURRICULUM_TYPE
 const curriculumType = CURRICULUM_TYPE;
 const meetingDate = ref(null);
 
-const selectedStatus = ref(STATUS_OPTIONS[0]);
-const selectedIspublic = ref(ISPUBLIC_OPTIONS[0]);
+const statusOptions = [
+  { id: 1, name: "ใช้งาน" },
+  { id: 0, name: "ไม่ใช้งาน" },
+];
+const ispublicOptions = [
+  { id: 1, value: true, name: "เผยแพร่" },
+  { id: 0, value: false, name: "ไม่เผยแพร่" },
+];
+
+const selectedStatus = ref(statusOptions[0]);
+const selectedIspublic = ref(ispublicOptions[0]);
 
 const colleges = ref([]);
 const degrees = ref([]); // raw จาก API
 const filteredDegrees = ref([]); // เอาไว้กรองในอนาคต
 
-// ปีเริ่มต้น (ฟอร์มหลัก)
+// ปีที่เริ่มต้น (ฟอร์มหลัก)
 const selectedStartYear = ref(null);
 const startYearOptions = ref([]);
 
@@ -561,19 +603,10 @@ const form = reactive({
 /* =========================
  * 5) Computed
  * ========================= */
-// หา id ของ “สมาชิกทุกประเภท”
-const allTypeId = computed(() => {
-  const found = (typeOptions.value || []).find(
-    (t) => t.name === "สมาชิกทุกประเภท"
-  );
-  return found ? found.id : null;
-});
 
 // id ของตัวเลือกย่อย (ยกเว้น all)
 const realTypeIds = computed(() =>
-  (typeOptions.value || [])
-    .filter((t) => t.name !== "สมาชิกทุกประเภท")
-    .map((t) => t.id)
+  (typeOptions.value || []).filter((t) => t.id !== ALL_ID).map((t) => t.id)
 );
 
 // const payloadTypeIds = computed(() => {
@@ -595,16 +628,21 @@ const realTypeIds = computed(() =>
 //   return uniqSorted;
 // });
 
-
 /* =========================
  * 6) Helper & UI utils
  * ========================= */
+// เลือกได้ถึงสิ้นสุดของ "วันนี้"
+const endOfToday = computed(() => {
+  const d = new Date();
+  d.setHours(23, 59, 59, 999);
+  return d;
+});
 const formatToThai = (date) => (date ? dayjs(date).format("DD/MM/BBBB") : "");
 
 // helper กันพลาดกรณีค่ามาเป็น string
 const toBE = (v) => (isNaN(+v) ? v : +v + 543);
 function buildAutoDescription() {
-  const typeName = selectedCurriculumType.value?.name?.toString().trim() || "";
+  const typeName = selectedCurriculumType.value?.name?.toString().trim();
   const yearBE = Number.isFinite(selectedCurriculumYear.value)
     ? String(selectedCurriculumYear.value)
     : "";
@@ -630,12 +668,12 @@ function clearForm() {
   selectedStartYear.value = null;
   selectedCurriculumYear.value = null;
   selectedCurriculum.value = null;
-  selectedCurriculumType.value = null;
+  selectedCurriculumType.value = CURRICULUM_TYPE[0];
   selectedTypes.value = [];
   meetingDate.value = null;
 
-  selectedStatus.value = STATUS_OPTIONS[0];
-  selectedIspublic.value = ISPUBLIC_OPTIONS[0];
+  selectedStatus.value = statusOptions[0];
+  selectedIspublic.value = ispublicOptions[0];
 }
 
 function notifyError(title, text) {
@@ -649,27 +687,22 @@ function notifyError(title, text) {
 
 const payloadTypeText = computed(() => {
   const sel = (selectedTypes.value || []).map(Number).filter(Number.isFinite);
-
   if (!sel.length) return "";
 
-  const allId = allTypeId.value;      // เช่น 1
-  const real = realTypeIds.value;     // เช่น [2, 3, 4]
+  const real = realTypeIds.value; // เช่น [1,2,3]
+  const hasAll = sel.includes(ALL_ID);
+  const selectedRealCount = new Set(sel.filter((id) => id !== ALL_ID)).size;
 
-  const hasAll = allId != null && sel.includes(allId);
-  const allRealSelected = real.length && real.every((id) => sel.includes(id));
-
-  // ✅ ถ้าเลือกสมาชิกทุกประเภท หรือเลือกครบทุกประเภทย่อย → return "1"
-  if (hasAll || allRealSelected) {
-    return String(allId); // 👉 "1"
+  // ✅ ถ้าเลือก ALL หรือเลือกครบทุก id จริง → ส่ง CSV ของทุก id จริง
+  if (hasAll || selectedRealCount === real.length) {
+    return real.join(","); // "1,2,3"
   }
 
-  // ไม่ได้เลือก 1 และไม่ได้เลือกครบทุกประเภท → ส่งเฉพาะที่เลือก
-  const uniqSorted = Array.from(new Set(sel.filter((id) => id !== allId))).sort(
-    (a, b) => a - b
-  );
-  return uniqSorted.join(","); // 👉 เช่น "2,3"
+  // ✅ ไม่ครบ → ส่งเฉพาะที่เลือก (ตัด ALL_ID ทิ้ง)
+  return Array.from(new Set(sel.filter((id) => id !== ALL_ID)))
+    .sort((a, b) => a - b)
+    .join(",");
 });
-
 /* =========================
  * 7) Data fetchers
  * ========================= */
@@ -714,9 +747,12 @@ async function fetchTypes() {
   try {
     const res = await getTypes();
     const raw = res?.data?.data ?? [];
-    typeOptions.value = raw
+    const mapped = raw
       .filter((t) => Number(t.active) === 1)
-      .map((t) => ({ id: t.id, name: t.type_name }));
+      .map((t) => ({ id: Number(t.id), name: String(t.type_name) }));
+
+    // ✅ prepend "สมาชิกทุกประเภท" (virtual)
+    typeOptions.value = [{ id: ALL_ID, name: ALL_LABEL }, ...mapped];
   } catch (err) {
     console.error("fetchTypes error:", err);
     await notifyError(
@@ -755,7 +791,12 @@ async function fetchDegrees() {
 
 async function fetchColleges() {
   try {
-    const params = { sort: "id", order: "ASC", search: search.value.trim() };
+    const params = {
+      sort: "institute_group", // ← ชื่อคอลัมน์ไว้ที่ sort
+      order: "ASC",
+      search: search.value.trim(),
+      active: 1,
+    };
     const res = await getCollegesPaginated(params);
     const rows = res.data?.data || [];
     colleges.value = rows.map((c) => ({
@@ -764,11 +805,91 @@ async function fetchColleges() {
     }));
   } catch (err) {
     console.error("getCollegesPaginated error:", err);
-    await notifyError(
-      "ไม่สามารถโหลดข้อมูลสถาบันการศึกษา",
-      "กรุณาลองใหม่อีกครั้ง"
-    );
+    await notifyError("ไม่สามารถโหลดข้อมูลสถาบัน", "กรุณาลองใหม่อีกครั้ง");
   }
+}
+// ========== Helpers สำหรับแสดงผลในโมดัลรายละเอียดเท่านั้น ==========
+
+// รวมชื่อสถาบัน + campus เป็น label เดียว
+function makeCollegeLabel(col) {
+  if (!col) return "";
+  const campus = (col.campus ?? "").trim();
+  return [col.name, campus].filter(Boolean).join("  ");
+}
+
+// แปลง CSV -> [number]
+function toIdArray(csvOrArray) {
+  if (Array.isArray(csvOrArray)) {
+    return csvOrArray.map(Number).filter(Number.isFinite);
+  }
+  if (typeof csvOrArray === "string") {
+    return csvOrArray
+      .split(/[,\uFF0C\u3001\s]+/)
+      .map((s) => Number(s.trim()))
+      .filter(Number.isFinite);
+  }
+  return [];
+}
+
+/**
+ * ตกแต่งข้อมูลหลักสูตรที่ดึงจาก getEducationById เพื่อให้แสดงผลได้ครบ:
+ * - เติม college_label (ชื่อ + campus)
+ * - เติม degree_name
+ * - map types จาก id -> name (ถ้ามี)
+ * หมายเหตุ: ไม่แตะ state ของฟอร์ม (selected*, form.*) ใด ๆ
+ */
+function decorateCurriculumForView(raw) {
+  const out = { ...raw };
+
+  // ---- College ----
+  // ถ้าตอบกลับมี object college ใช้ตรงนั้นได้เลย
+  if (out.college) {
+    out.college_label = makeCollegeLabel(out.college);
+  } else if (Number.isFinite(Number(out.college_id))) {
+    // เผื่อบาง backend ให้มาแค่ id ให้ลอง map จากลิสต์ที่โหลดไว้
+    const found = (colleges.value || []).find(
+      (c) => Number(c.id) === Number(out.college_id)
+    );
+    if (found) {
+      out.college = {
+        id: found.id,
+        name: found.name ?? found.label ?? "",
+        campus: found.campus ?? "",
+        active: found.active,
+      };
+      out.college_label = makeCollegeLabel(out.college);
+    } else {
+      out.college_label = "";
+    }
+  } else {
+    out.college_label = "";
+  }
+
+  // ---- Degree ----
+  if (out.degree?.name) {
+    out.degree_name = out.degree.name;
+  } else if (Number.isFinite(Number(out.degree_id))) {
+    const d = (filteredDegrees.value || []).find(
+      (x) => Number(x.id) === Number(out.degree_id)
+    );
+    out.degree_name = d?.name ?? "";
+    if (d && !out.degree) out.degree = d;
+  } else {
+    out.degree_name = "";
+  }
+
+  // ---- Types (ถ้าส่งมาเป็น CSV) ----
+  if (!out.types && (out.type || out.type_ids)) {
+    const ids = toIdArray(out.type ?? out.type_ids ?? []);
+    out.type_ids = ids;
+    out.types = ids.map((id) => ({
+      id,
+      name:
+        (typeOptions.value || []).find((t) => t.id === id)?.name || String(id),
+    }));
+  }
+
+  return out;
 }
 
 /* =========================
@@ -822,38 +943,57 @@ watch([selectedCurriculumType, selectedCurriculumYear], () => {
 
 // Checkbox “สมาชิกทุกประเภท” (select all / indeterminate)
 function onTypeChange(changedId) {
-  const allId = allTypeId.value;
-  if (allId == null) return;
-
-  if (changedId === allId) {
-    const checked = selectedTypes.value.includes(allId);
-    selectedTypes.value = checked ? [allId, ...realTypeIds.value] : [];
+  if (changedId === ALL_ID) {
+    const checked = selectedTypes.value.includes(ALL_ID);
+    // เลือก ALL → รวม ALL + ทุก id จริง
+    selectedTypes.value = checked ? [ALL_ID, ...realTypeIds.value] : [];
   } else {
-    selectedTypes.value = selectedTypes.value.filter((id) => id !== allId);
+    // ติ๊กย่อย: ตัด ALL ออกก่อน
+    selectedTypes.value = selectedTypes.value.filter((id) => id !== ALL_ID);
+
     const sel = new Set(selectedTypes.value);
-    const selectedRealCount = realTypeIds.value.filter((id) =>
-      sel.has(id)
-    ).length;
-    if (selectedRealCount === realTypeIds.value.length) {
-      selectedTypes.value = [allId, ...realTypeIds.value];
+    const real = realTypeIds.value;
+    const selectedRealCount = real.filter((id) => sel.has(id)).length;
+
+    // ถ้าเลือกครบทุกย่อย → ใส่ ALL ให้แสดงเป็น "เลือกทั้งหมด"
+    if (selectedRealCount === real.length) {
+      selectedTypes.value = [ALL_ID, ...real];
     }
   }
 }
+
+// ทำ indeterminate (แถบเทา) ให้ checkbox ALL
 watch(
-  [selectedTypes, realTypeIds, allTypeId],
+  [selectedTypes, realTypeIds],
   () => {
-    if (!selectAllRef.value || allTypeId.value == null) return;
+    if (!selectAllRef.value) return;
     const sel = new Set(selectedTypes.value);
-    const selectedRealCount = realTypeIds.value.filter((id) =>
-      sel.has(id)
-    ).length;
-    const allReal = realTypeIds.value.length;
+    const real = realTypeIds.value;
+    const selectedRealCount = real.filter((id) => sel.has(id)).length;
+
+    // ALL ติ๊กเมื่อเลือกครบ (เราใส่ใน onTypeChange แล้ว)
+    // ตั้ง indeterminate เมื่อเลือกบางส่วน
     selectAllRef.value.indeterminate =
-      selectedRealCount > 0 && selectedRealCount < allReal;
+      selectedRealCount > 0 && selectedRealCount < real.length;
   },
   { deep: true }
 );
 
+watch(
+  [selectedTypes, realTypeIds],
+  () => {
+    if (!selectAllRef.value) return;
+    const sel = new Set(selectedTypes.value);
+    const real = realTypeIds.value;
+    const selectedRealCount = real.filter((id) => sel.has(id)).length;
+
+    // ALL ติ๊กเมื่อเลือกครบ (เราใส่ใน onTypeChange แล้ว)
+    // ตั้ง indeterminate เมื่อเลือกบางส่วน
+    selectAllRef.value.indeterminate =
+      selectedRealCount > 0 && selectedRealCount < real.length;
+  },
+  { deep: true }
+);
 /* =========================
  * 9) Submit
  * ========================= */
@@ -867,17 +1007,6 @@ async function saveCurriculum() {
     }
     if (!form.name?.trim()) {
       await Swal.fire({ icon: "warning", title: "กรุณาเลือกชื่อหลักสูตร" });
-      return;
-    }
-    if (!form.degree_id) {
-      await Swal.fire({ icon: "warning", title: "กรุณาเลือกระดับการศึกษา" });
-      return;
-    }
-    if (!form.start_year) {
-      await Swal.fire({
-        icon: "warning",
-        title: "กรุณาเลือกปีเริ่มต้น (พ.ศ.)",
-      });
       return;
     }
     const noYear =
@@ -896,10 +1025,21 @@ async function saveCurriculum() {
       return;
     }
 
+    if (!form.degree_id) {
+      await Swal.fire({ icon: "warning", title: "กรุณาเลือกระดับการศึกษา" });
+      return;
+    }
+    if (!selectedTypes.value.length)
+      return Swal.fire({
+        icon: "warning",
+        title: "กรุณาเลือก 'หลักสูตรสำหรับ' อย่างน้อย 1 รายการ",
+      });
+
     if (!form.meeting_no?.trim()) {
       await Swal.fire({ icon: "warning", title: "กรุณากรอกมติการประชุม" });
       return;
     }
+
     if (!meetingDate.value) {
       await Swal.fire({ icon: "warning", title: "กรุณาเลือกวันที่ประชุม" });
       return;
@@ -914,7 +1054,13 @@ async function saveCurriculum() {
       });
       return;
     }
-
+    if (!form.start_year) {
+      await Swal.fire({
+        icon: "warning",
+        title: "กรุณาเลือกปีที่เริ่มต้น (พ.ศ.)",
+      });
+      return;
+    }
     const submitData = {
       name: form.name.trim(),
       description: form.description?.trim() ?? "",
@@ -931,7 +1077,27 @@ async function saveCurriculum() {
     };
 
     // ส่ง
-    await addEducation(submitData);
+    // ส่ง
+    const res = await addEducation(submitData);
+
+    // ดึง id ที่สร้างใหม่
+    const created = res?.data?.data ?? res?.data?.item ?? res?.data ?? {};
+    let createdId =
+      created?.id ?? created?.curriculum_id ?? created?.insertId ?? null;
+
+    // ถ้ามี id ให้ดึงรายละเอียดเต็ม
+    let detail = created;
+    if (createdId) {
+      try {
+        const r = await getEducationById(createdId);
+        detail = r?.data?.data ?? r?.data ?? created;
+      } catch (_) {
+        // ถ้าดึง detail ไม่ได้ ใช้ created ไปก่อน
+      }
+    }
+
+    // 🟢 ตกแต่งสำหรับ "แสดงผล" เท่านั้น (ไม่แตะ state ฟอร์ม)
+    detailCurriculum.value = decorateCurriculumForView(detail);
 
     await Swal.fire({
       icon: "success",
@@ -943,7 +1109,9 @@ async function saveCurriculum() {
     });
 
     emit("refresh-data");
-    props.closeModal();
+    props.closeModal?.();
+    await nextTick();
+    showDetailModal.value = true;
   } catch (err) {
     console.error("saveCurriculum error:", err?.response?.data || err);
     const status =
@@ -980,23 +1148,53 @@ async function saveCurriculum() {
 /* =========================
  * 10) Open modal flow
  * ========================= */
+function closeDetailModal() {
+  showDetailModal.value = false;
+  detailCurriculum.value = null; // ✅ คงไว้ดีแล้ว
+}
+
+function openEditFromDetail(curr) {
+  showDetailModal.value = false;
+  editingCurriculum.value = { ...(curr || detailCurriculum.value || {}) };
+  showEditModal.value = true;
+}
+function closeEditModal() {
+  showEditModal.value = false;
+  editingCurriculum.value = null;
+}
+async function handleEditSaved(e) {
+  // ปิด Edit ก่อน
+  showEditModal.value = false;
+  const id =
+    e?.id ?? editingCurriculum.value?.id ?? detailCurriculum.value?.id ?? null;
+  editingCurriculum.value = null;
+
+  // ดึงข้อมูลล่าสุดมาเปิดใน Detail
+  if (id) {
+    try {
+      const r = await getEducationById(id);
+      const fresh = r?.data?.data ?? r?.data ?? {};
+      detailCurriculum.value = decorateCurriculumForView(fresh);
+    } catch {
+      const merged = {
+        ...(detailCurriculum.value || {}),
+        ...(e?.atch || {}),
+        id,
+      };
+      detailCurriculum.value = decorateCurriculumForView(merged);
+    }
+  }
+  showDetailModal.value = true;
+  emit("refresh-data", e);
+}
 watch(
   () => props.showModal,
   async (open) => {
     if (!open) return;
 
-    // reset หรือ preload จาก props.curriculum
+    // reset
     if (!props.curriculum) {
       clearForm();
-    } else {
-      // โหลดค่าที่เลือกไว้ (กรณีแก้ไข)
-      const existing =
-        props.curriculum.type_ids ??
-        props.curriculum.types?.map((t) => t.id) ??
-        [];
-      selectedTypes.value = Array.isArray(existing)
-        ? existing.map((n) => Number(n)).filter((n) => Number.isFinite(n))
-        : [];
     }
 
     isLoading.value = true;
@@ -1006,8 +1204,49 @@ watch(
         fetchColleges(),
         fetchCurriculum(),
         fetchStartYears(),
-        fetchTypes(),
+        fetchTypes(), // ⬅️ สำคัญ: ต้องโหลด typeOptions ก่อนจะคำนวณ "ครบทุกประเภท"
       ]);
+
+      if (props.curriculum) {
+        // สถาบัน (v-select ใช้ reduce เป็น id)
+        const collegeId = Number(
+          props.curriculum.college_id ?? props.curriculum.college?.id
+        );
+        if (Number.isFinite(collegeId)) {
+          selectedCollege.value = collegeId; // v-select จะแมป label ให้เอง
+        }
+
+        // ระดับการศึกษา (Listbox ต้องตั้งเป็น object จาก options)
+        const degreeId = Number(
+          props.curriculum.degree_id ?? props.curriculum.degree?.id
+        );
+        if (Number.isFinite(degreeId)) {
+          const found = (filteredDegrees.value || []).find(
+            (d) => Number(d.id) === degreeId
+          );
+          if (found) selectedDegree.value = found;
+        }
+      }
+      // โหลดค่าที่เลือกไว้ (กรณีแก้ไข)
+      let existing = [];
+      // รองรับได้ทั้ง props.curriculum.type (CSV) และ props.curriculum.type_ids (array)
+      const csv = props.curriculum?.type ?? props.curriculum?.types ?? null;
+      if (typeof csv === "string") {
+        existing = csv
+          .split(",")
+          .map((s) => Number(s.trim()))
+          .filter((n) => Number.isFinite(n));
+      } else if (Array.isArray(props.curriculum?.type_ids)) {
+        existing = props.curriculum.type_ids
+          .map((n) => Number(n))
+          .filter((n) => Number.isFinite(n));
+      }
+
+      const real = realTypeIds.value;
+      const allSelected =
+        real.length > 0 && real.every((id) => existing.includes(id));
+
+      selectedTypes.value = allSelected ? [ALL_ID, ...real] : existing;
     } finally {
       isLoading.value = false;
     }

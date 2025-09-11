@@ -26,7 +26,7 @@
       <div class="">
         <div class="order-1 w-full min-w-0">
           <div
-            class="relative w-full rounded-lg border flex items-center px-3 py-2 space-x-2"
+            class="relative w-full rounded-lg border flex items-center px-3 py-[0.7rem] space-x-2"
           >
             <svg
               class="w-5 h-5 text-gray-400 flex-shrink-0"
@@ -44,7 +44,7 @@
             <input
               v-model="search"
               type="text"
-              placeholder="ค้นหาชื่อสถาบันการศึกษา/ชื่อหลักสูตร/หลักสูตร"
+              placeholder="ค้นหาชื่อสถาบัน/ชื่อหลักสูตร/หลักสูตร"
               class="flex-1 min-w-0 bg-transparent placeholder-gray-400 text-gray-900 outline-none"
             />
           </div>
@@ -59,7 +59,7 @@
               class="relative w-full rounded-lg border"
             >
               <ListboxButton
-                class="relative w-full inline-flex items-center justify-between px-3 py-2"
+                class="relative w-full inline-flex items-center justify-between px-3 py-[0.7rem]"
               >
                 <span class="truncate">{{
                   selected?.name || "แสดงระดับการศึกษาทั้งหมด"
@@ -89,87 +89,30 @@
                 </ListboxOption>
               </ListboxOptions>
             </Listbox>
-            <Listbox
+            <v-select
               v-model="selectedStartYear"
-              :by="'id'"
-              as="div"
-              class="relative w-full rounded-lg border"
-            >
-              <ListboxButton
-                class="relative w-full inline-flex items-center justify-between px-3 py-2"
-              >
-                <span class="truncate">{{
-                  selectedStartYear.name || "แสดงปีที่เริ่มต้นทั้งหมด"
-                }}</span>
-                <ChevronUpDownIcon
-                  class="w-5 h-5 text-gray-500"
-                  aria-hidden="true"
-                />
-              </ListboxButton>
-
-              <ListboxOptions
-                class="absolute z-20 mt-2 max-h-60 w-full md:w-[14rem] overflow-auto rounded-xl bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 left-0"
-              >
-                <ListboxOption
-                  v-for="item in startyears"
-                  :key="item.id"
-                  :value="item"
-                  class="relative cursor-default select-none py-2 pl-10 pr-4 hover:bg-blue-50"
-                >
-                  <span class="block truncate">{{ item.name }}</span>
-                  <span
-                    v-if="selectedStartYear.id === item.id"
-                    class="absolute inset-y-0 left-3 flex items-center text-blue-600"
-                  >
-                    <CheckIcon class="w-5 h-5" aria-hidden="true" />
-                  </span>
-                </ListboxOption>
-              </ListboxOptions>
-            </Listbox>
-            <Listbox
+              :options="startyears"
+              label="name"
+              :searchable="true"
+              :clearable="false"
+              placeholder="แสดงปีที่เริ่มต้นทั้งหมด"
+            />
+            <v-select
               v-model="selectedEndYear"
-              :by="'id'"
-              as="div"
-              class="relative w-full rounded-lg border"
-            >
-              <ListboxButton
-                class="relative w-full inline-flex items-center justify-between px-3 py-2"
-              >
-                <span class="truncate">{{
-                  selectedEndYear.name || "แสดงปีที่สิ้นสุดทั้งหมด"
-                }}</span>
-                <ChevronUpDownIcon
-                  class="w-5 h-5 text-gray-500"
-                  aria-hidden="true"
-                />
-              </ListboxButton>
-
-              <ListboxOptions
-                class="absolute z-20 mt-2 max-h-60 w-full md:w-[14rem] overflow-auto rounded-xl bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 left-0"
-              >
-                <ListboxOption
-                  v-for="item in endyears"
-                  :key="item.id"
-                  :value="item"
-                  class="relative cursor-default select-none py-2 pl-10 pr-4 hover:bg-blue-50"
-                >
-                  <span class="block truncate">{{ item.name }}</span>
-                  <span
-                    v-if="selectedEndYear.id === item.id"
-                    class="absolute inset-y-0 left-3 flex items-center text-blue-600"
-                  >
-                    <CheckIcon class="w-5 h-5" aria-hidden="true" />
-                  </span>
-                </ListboxOption>
-              </ListboxOptions>
-            </Listbox>
+              :options="endyears"
+              label="name"
+              :searchable="true"
+              :clearable="false"
+              placeholder="แสดงปีที่สิ้นสุดทั้งหมด"
+              :disabled="loadingYears"
+            />
             <Listbox
               v-model="curriculum_published"
               as="div"
               class="relative w-full rounded-lg border"
             >
               <ListboxButton
-                class="relative w-full inline-flex items-center justify-between px-3 py-2"
+                class="relative w-full inline-flex items-center justify-between px-3 py-[0.7rem]"
               >
                 <span class="truncate">{{
                   curriculum_published?.name || "สถานะการเผยแพร่"
@@ -204,7 +147,7 @@
               class="relative w-full rounded-lg border"
             >
               <ListboxButton
-                class="relative w-full inline-flex items-center justify-between px-3 py-2"
+                class="relative w-full inline-flex items-center justify-between px-3 py-[0.7rem]"
               >
                 <span class="truncate">{{
                   status?.name || "สถานะหลักสูตร"
@@ -260,7 +203,7 @@
   </div>
 </template>
 <script setup>
-import { ref, computed, watch, onMounted } from "vue";
+import { ref, computed, watch, onMounted, nextTick } from "vue";
 import { getallYears, getDegrees } from "@/services/apiService";
 import { useRouter, useRoute } from "vue-router";
 import {
@@ -270,10 +213,14 @@ import {
   ListboxOption,
 } from "@headlessui/vue";
 import { ChevronUpDownIcon, CheckIcon } from "@heroicons/vue/24/solid";
+import vSelect from "vue-select";
+import "vue-select/dist/vue-select.css";
 
-const emit = defineEmits(["onSearch"]);
+const emit = defineEmits(["onSearch", "clear"]);
 const router = useRouter();
 const route = useRoute();
+
+const hydrated = ref(false);
 
 const search = ref("");
 
@@ -317,20 +264,24 @@ async function fetchYears() {
   }
 }
 
-const startyears = computed(() => [
-  START_DEFAULT,
-  ...toOptions(startYearList.value),
-]);
+const startyears = computed(() => {
+  const sorted = [...startYearList.value].sort((a, b) => b - a); // มาก -> น้อย
+  return [START_DEFAULT, ...toOptions(sorted)];
+});
+
 const endyears = computed(() => {
   const fromBE =
     selectedStartYear.value?.id === ""
       ? null
       : Number(selectedStartYear.value.id);
+
   const filtered =
     fromBE == null
       ? endYearList.value
       : endYearList.value.filter((y) => y >= fromBE);
-  return [END_DEFAULT, ...toOptions(filtered)];
+
+  const sorted = [...filtered].sort((a, b) => b - a); // มาก -> น้อย
+  return [END_DEFAULT, ...toOptions(sorted)];
 });
 
 // ถ้า start > end -> reset end
@@ -362,8 +313,8 @@ const published = [
 
 const status_curriculum = [
   { id: null, name: "ทั้งหมด" },
-  { id: '1', name: "ใช้งาน" },
-  { id: '0', name: "ไม่ใช้งาน" },
+  { id: "1", name: "ใช้งาน" },
+  { id: "0", name: "ไม่ใช้งาน" },
 ];
 
 // ยิงค้นหา
@@ -387,6 +338,7 @@ let typingTimer = null;
 watch(
   () => search.value,
   () => {
+    if (!hydrated.value) return;
     clearTimeout(typingTimer);
     typingTimer = setTimeout(emitSearch, 300);
   }
@@ -395,7 +347,10 @@ watch(
 // เปลี่ยนตัวกรองอื่น ๆ ให้ยิงทันที
 watch(
   [selected, selectedStartYear, selectedEndYear, curriculum_published, status],
-  emitSearch
+  () => {
+    if (!hydrated.value) return;
+    emitSearch();
+  }
 );
 
 // โหลด degree + map จาก URL (?type=)
@@ -442,11 +397,30 @@ function prefillFromUrl() {
     const opt = endyears.value.find((o) => Number(o.id) === ey);
     if (opt) selectedEndYear.value = opt;
   }
+
+  if (typeof route.query.curriculum_published !== "undefined") {
+    const qv = String(route.query.curriculum_published).trim().toLowerCase();
+    if (qv === "true" || qv === "false") {
+      const boolVal = qv === "true";
+      const opt = published.find((p) => p.id === boolVal);
+      if (opt) curriculum_published.value = opt;
+    } else {
+      curriculum_published.value = null;
+    }
+  }
+
+  // ✅ เติม “สถานะหลักสูตร” จาก URL ('1' / '0')
+  if (typeof route.query.curriculum_active !== "undefined") {
+    const qa = String(route.query.curriculum_active);
+    const opt = status_curriculum.find((s) => String(s.id) === qa);
+    status.value = opt ?? null;
+  }
 }
 
 // ล้างค่า
 function reset() {
   // เคลียร์ค่าบนฟอร์ม
+  hydrated.value = false;
   search.value = "";
   selected.value = null;
   selectedStartYear.value = START_DEFAULT;
@@ -454,30 +428,11 @@ function reset() {
   curriculum_published.value = null;
   status.value = null;
 
-  // ลบเฉพาะคีย์ตัวกรองออกจาก URL (กันค่าสะสมอย่าง curriculum_active=1 ติดค้าง)
-  const q = { ...route.query };
-  [
-    'search',
-    'type',
-    'college_name',
-    'degree_active',
-    'curriculum_active',
-    'curriculum_published',
-    'meeting_resolution',
-    'status',            // เผื่อมีที่ส่งชื่อว่า status
-    'startYear',
-    'endYear',
-    'start_year',        // เผื่อกรณีชื่อแบบ snake
-    'end_year'
-  ].forEach(k => delete q[k]);
-
-  // จะรีเซ็ตหน้ากลับไปหน้า 1 ด้วยก็ได้ (ตามต้องการ)
-  q.page = '1';
-
-  router.replace({ query: q });
-
-  // ยิงค้นหาใหม่ด้วยค่าที่ถูกเคลียร์แล้ว
-  emitSearch();
+  // ✅ แจ้งพาเรนต์ให้รีเซ็ต state fetch เอง
+  emit("clear");
+  nextTick(() => {
+    hydrated.value = true;
+  });
 }
 
 defineExpose({ reset });
@@ -487,7 +442,7 @@ onMounted(async () => {
   await fetchYears();
   await fetchDegrees();
   prefillFromUrl();
-  emitSearch();
+  hydrated.value = true;
 });
 </script>
 

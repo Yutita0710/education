@@ -14,17 +14,17 @@
         <h1
           class="text-[#111C2D]/80 text-lg md:text-3xl font-bold drop-shadow-sm mt-4"
         >
-          สถาบันการศึกษาที่ผ่านการรับรองจากสภาวิชาชีพบัญชี ในพระบรมราชูปถัมภ์
+          สถาบันที่ผ่านการรับรองจากสภาวิชาชีพบัญชี ในพระบรมราชูปถัมภ์
         </h1>
       </div>
     </header>
 
     <!-- Filter Section -->
     <div
-      class="bg-white rounded-[1.4rem] border shadow-lg px-4 py-4 md:px-6 md:py-5 w-full h-auto md:-mt-[8rem] md:w-[90%] mt-0 mx-auto text-[#111C2D]/80"
+      class="bg-white rounded-[1.4rem] border shadow-lg px-4 py-4 md:px-6 md:py-5 w-full h-auto md:-mt-[8rem] md:w-[80%] mt-0 mx-auto text-[#111C2D]/80"
     >
       <div
-        class="flex flex-col gap-2 lg:grid lg:grid-cols-[2fr,1fr,1fr,1fr,1fr,auto] lg:gap-6 w-full"
+        class="flex flex-col gap-2 lg:grid lg:grid-cols-[3fr,1fr,1fr,1fr,1fr,auto] lg:gap-6 w-full"
       >
         <!-- Search Box -->
         <div class="w-full">
@@ -76,44 +76,7 @@
           />
         </div>
 
-        <div>
-          <Listbox
-            v-model="selectedIspublic"
-            as="div"
-            class="relative w-full rounded-lg border px-2 py-[0.15rem]"
-          >
-            <ListboxButton
-              class="relative w-full inline-flex items-center justify-between px-3 py-2"
-            >
-              <span class="truncate">{{
-                selectedIspublic?.name || "สถานะการเผยแพร่"
-              }}</span>
-              <ChevronUpDownIcon
-                class="w-5 h-5 text-gray-500"
-                aria-hidden="true"
-              />
-            </ListboxButton>
-
-            <ListboxOptions
-              class="absolute z-20 mt-2 max-h-60 w-full md:w-[14rem] overflow-auto rounded-xl bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 left-0"
-            >
-              <ListboxOption
-                v-for="ispublic in ispublicOptions"
-                :key="ispublic.id"
-                :value="ispublic"
-                class="relative cursor-default select-none py-2 pl-10 pr-4 hover:bg-blue-50"
-              >
-                <span class="block truncate">{{ ispublic.name }}</span>
-                <span
-                  v-if="selectedIspublic?.id === ispublic.id"
-                  class="absolute inset-y-0 left-3 flex items-center text-blue-600"
-                >
-                  <CheckIcon class="w-5 h-5" aria-hidden="true" />
-                </span>
-              </ListboxOption>
-            </ListboxOptions>
-          </Listbox>
-        </div>
+        
         <div>
           <Listbox
             v-model="selectedStatus"
@@ -121,7 +84,7 @@
             class="relative w-full rounded-lg border px-2 py-[0.15rem]"
           >
             <ListboxButton
-              class="relative w-full inline-flex items-center justify-between px-3 py-2"
+              class="relative w-full inline-flex items-center justify-between px-3 py-3"
             >
               <span class="truncate">{{
                 selectedStatus?.name || "สถานะการใช้งาน"
@@ -154,7 +117,7 @@
         </div>
 
         <!-- ปุ่มล้างค่า -->
-        <div class="flex justify-center items-center">
+        <div class="flex justify-left items-center">
           <button
             @click="reset"
             class="shrink-0 bg-[#F8B15D] hover:bg-[#FE7743] text-white px-6 py-3 rounded-full shadow font-medium inline-flex items-center gap-2"
@@ -241,13 +204,9 @@ const paramsRaw = computed(() => ({
   search: (searchText.value || "").trim(),
   country: selectedCountry.value || "",
   province: selectedProvince.value || "",
-  is_published: selectedIspublic.value?.value ?? "", // boolean | ""
-  status: selectedStatus.value?.id ?? "", // "0" | "1" | ""
-  page: 1,
-  limit: 10,
-  order: "id",
-  sort: "ASC",
+  status: selectedStatus.value?.id ?? "",
 }));
+
 // แปลงค่าหลายรูปแบบ -> boolean | undefined (undefined = ไม่กรอง)
 const toBoolish = (v) => {
   if (v === true || v === "true" || v === 1 || v === "1") return true;
@@ -266,11 +225,7 @@ const paramsForApi = computed(() => {
 
   if ("status" in out) out.status = Number(out.status); // "0"/"1" -> 0/1
 
-  if ("is_published" in out) {
-    const b = toBoolish(out.is_published);
-    if (b === undefined) delete out.is_published; // ไม่กรอง = ไม่ส่ง
-    else out.is_published = b; // boolean true/false
-  }
+  
   return out;
 });
 
@@ -332,20 +287,8 @@ function prefillFromUrl() {
     selectedStatus.value =
       statusOptions.find((o) => o.id === String(q.status)) ?? null;
   }
-
-  // is_published (รองรับ "1"|"0"|"true"|"false"|boolean)
-  if (q.is_published !== undefined) {
-    const v = q.is_published;
-    let boolish = null;
-    if (v === true || v === "true" || v === "1") boolish = true;
-    else if (v === false || v === "false" || v === "0") boolish = false;
-
-    selectedIspublic.value =
-      boolish === null
-        ? null
-        : ispublicOptions.find((o) => o.value === boolish) ?? null;
-  }
 }
+
 
 // โหลด options
 onMounted(async () => {

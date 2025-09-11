@@ -242,7 +242,7 @@ async function login() {
         timerProgressBar: true,
       });
 
-      router.push("/admin_education/curriculum");
+      router.push("/admin/curriculum");
     } else {
       // แสดงข้อความผิดพลาด
       Swal.fire({

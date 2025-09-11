@@ -1,9 +1,9 @@
 import { createRouter, createWebHistory } from "vue-router";
-import CurriculumList from "@/views/CurriculumList.vue";
 import Login from "@/views/admin/Login.vue";
 import Swal from "sweetalert2";
-import AddCollegeAdmin from "@/views/admin/AddCollegeAdmin.vue";
+import CurriculumList from "@/views/CurriculumList.vue";
 import AdminCurriculumList from "@/views/admin/CurriculumList.vue";
+import AddCollegeAdmin from "@/views/admin/AddCollegeAdmin.vue";
 
 // ตรวจสอบ token และเวลา session
 function checkSession() {
@@ -20,6 +20,8 @@ function checkSession() {
     localStorage.removeItem("token");
     localStorage.removeItem("username");
     localStorage.removeItem("expiry");
+    if (typeof window !== "undefined")
+      window.dispatchEvent(new Event("auth-changed"));
     return false;
   }
   return true;
@@ -27,7 +29,7 @@ function checkSession() {
 
 // ตัวอย่างตรวจสอบ token ใน localStorage
 function isAuthenticated() {
-  return !!localStorage.getItem("token");
+  return checkSession();
 }
 
 const routes = [
@@ -38,7 +40,7 @@ const routes = [
     meta: { breadcrumb: "หลักสูตร" },
   },
   {
-    path: "/admin_education/login",
+    path: "/admin/login",
     name: "login",
     component: Login,
     meta: {
@@ -47,7 +49,7 @@ const routes = [
     },
   },
   {
-    path: "/admin_education/curriculum",
+    path: "/admin/curriculum",
     name: "admin-curriculum",
     component: AdminCurriculumList,
     beforeEnter: async (to, from, next) => {
@@ -57,6 +59,9 @@ const routes = [
         // ❌ เคลียร์ token + username ก่อน
         localStorage.removeItem("token");
         localStorage.removeItem("username");
+        localStorage.removeItem("expiry");
+        if (typeof window !== "undefined")
+          window.dispatchEvent(new Event("auth-changed"));
 
         await Swal.fire({
           icon: "warning",
@@ -66,13 +71,13 @@ const routes = [
         });
 
         // ไปหน้า login (ซ่อน navbar อัตโนมัติถ้า meta.hideNavbar = true)
-        next("/admin_education/login");
+        next("/admin/login");
       }
     },
     meta: { requiresAuth: true, breadcrumb: "จัดการหลักสูตร" },
   },
   {
-    path: "/admin_education/College/add",
+    path: "/admin/College",
     name: "add-College",
     component: AddCollegeAdmin,
     beforeEnter: async (to, from, next) => {
@@ -85,7 +90,7 @@ const routes = [
           text: "กรุณาเข้าสู่ระบบใหม่",
           confirmButtonColor: "#3B82F6",
         });
-        next("/admin_education/login");
+        next("/admin/login");
       }
     },
     meta: { requiresAuth: true, breadcrumb: "เพิ่มสถาบัน" },
@@ -99,11 +104,15 @@ const router = createRouter({
 
 // Navigation Guard สำหรับกรณีทั่วไป
 router.beforeEach((to, from, next) => {
-  if (to.meta.requiresAuth && !isAuthenticated()) {
-    next({ name: "login" }); // ถ้ายังไม่ login ให้ไปหน้า Login
-  } else {
-    next();
+  if (to.meta.requiresAuth) {
+    // ตรวจหมดอายุตรงนี้ด้วย
+    if (!checkSession()) {
+      if (typeof window !== "undefined")
+        window.dispatchEvent(new Event("auth-changed"));
+      return next({ name: "login" });
+    }
   }
+  next();
 });
 
 export default router;
