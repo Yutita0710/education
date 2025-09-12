@@ -83,7 +83,7 @@
             :key="item.id"
             :class="[
               'hover:bg-gray-50',
-              item.college.active === 0 || item.active === 0 ? 'bg-gray-100 text-gray-300' : '',
+              item.college.active === 0 || item.active === 0 ? 'bg-gray-100 text-gray-400' : '',
             ]"
           >
             <!-- ลำดับ -->
@@ -257,14 +257,13 @@
     </div>
   </div>
 
-  <!-- Modal แก้ไข -->
-  <EditCurriculumModal
-  v-if="showEditModal"
-  :key="selectedCurriculum?.id ?? 'new'" 
-  :showModal="showEditModal"
-  :curriculum="selectedCurriculum"
-  :closeModal="closeEditModal"
-  @refresh-data="handleRefreshData"
+ <EditCurriculumModal
+   v-if="showEditModal"
+   :key="selectedCurriculum?.id ?? 'new'" 
+   :showModal="showEditModal"
+   :curriculum="selectedCurriculum"
+   :closeModal="closeEditModal"
+   @refresh-data="handleEditSaved"
 />
 
   <!-- Modal รายละเอียด -->
@@ -277,7 +276,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue"; // ✅ เพิ่ม onMounted
+import { ref, onMounted, nextTick } from "vue"; // ✅ เพิ่ม onMounted
 import EditCurriculumModal from "./EditCurriculumModal.vue";
 import DetailCurriculumModal from "./DetailCurriculumModal.vue"; // ✅ ถ้าใช้โมดัลรายละเอียด
 import { getTypes } from "@/services/apiService";
@@ -313,10 +312,29 @@ function closeEditModal() {
   selectedCurriculum.value = null;
 }
 
-const handleRefreshData = (e) => {
+async function handleEditSaved(e) {
+  // ปิด Edit ก่อน
+  showEditModal.value = false;
+
+  // หา id ที่เชื่อถือได้
+  const id = e?.id ?? selectedCurriculum.value?.id ?? detailCurriculum.value?.id ?? null;
+
+  // รวม payload ล่าสุดกลับเข้า detailCurriculum
+  detailCurriculum.value = {
+    ...(detailCurriculum.value || {}),
+    ...(selectedCurriculum.value || {}),
+    ...(e?.atch || {}), // payload ที่ emit มาจาก EditCurriculumModal
+    id,
+  };
+
+  // ให้ DOM อัปเดตก่อน แล้วค่อยเปิด Detail (กันอาการกะพริบ/ซ้อน)
+  await nextTick();
+  showDetailModal.value = true;
+
+  // แจ้งให้พาเรนต์รีเฟรชตาราง ถ้าต้องการ
   emit("refreshData", e);
   emit("refresh", e);
-};
+}
 // ---------------------- Detail modal ----------------------
 const showDetailModal = ref(false);
 const detailCurriculum = ref(null);

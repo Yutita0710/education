@@ -454,22 +454,22 @@
     </div>
   </div>
   <DetailCurriculumModal
-    :key="detailCurriculum?.id ?? (showDetailModal ? 'open' : 'closed')"
-    :showModal="showDetailModal"
-    :curriculum="detailCurriculum"
-    :closeModal="closeDetailModal"
-    @request-edit="openEditFromDetail"
-    @refresh-data="emit('refresh-data', $event)"
-  />
+  :key="detailCurriculum?.id ?? (showDetailModal ? 'open' : 'closed')"
+  :showModal="showDetailModal"
+  :curriculum="detailCurriculum"
+  :closeModal="closeDetailModal"
+  @request-edit="openEditFromDetail"
+  @refresh-data="emit('refresh-data', $event)"
+/>
 
   <EditCurriculumModal
-    v-if="showEditModal"
-    :key="editingCurriculum?.id ?? 'new'"
-    :showModal="showEditModal"
-    :curriculum="editingCurriculum"
-    :closeModal="closeEditModal"
-    @refresh-data="handleRefreshData"
-  />
+   v-if="showEditModal"
+   :key="editingCurriculum?.id ?? 'new'"
+   :showModal="showEditModal"
+   :curriculum="editingCurriculum"
+   :closeModal="closeEditModal"
+   @refresh-data="handleEditSaved"
+ />
 </template>
 
 <script setup>
@@ -978,22 +978,6 @@ watch(
   },
   { deep: true }
 );
-
-watch(
-  [selectedTypes, realTypeIds],
-  () => {
-    if (!selectAllRef.value) return;
-    const sel = new Set(selectedTypes.value);
-    const real = realTypeIds.value;
-    const selectedRealCount = real.filter((id) => sel.has(id)).length;
-
-    // ALL ติ๊กเมื่อเลือกครบ (เราใส่ใน onTypeChange แล้ว)
-    // ตั้ง indeterminate เมื่อเลือกบางส่วน
-    selectAllRef.value.indeterminate =
-      selectedRealCount > 0 && selectedRealCount < real.length;
-  },
-  { deep: true }
-);
 /* =========================
  * 9) Submit
  * ========================= */
@@ -1047,7 +1031,7 @@ async function saveCurriculum() {
 
     const meetingDateStr = dayjs(meetingDate.value).format("YYYY-MM-DD");
     const today = dayjs();
-    if (meetingDate.value > today) {
+    if (dayjs(meetingDate.value).isAfter(today, 'day')) {
       await Swal.fire({
         icon: "warning",
         title: "วันที่ประชุมต้องไม่เกินวันที่ปัจจุบัน",

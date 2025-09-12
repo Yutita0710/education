@@ -826,7 +826,7 @@ async function updateCurriculum() {
       timerProgressBar: true,
     });
 
-    emit("refresh-data", { id: props.curriculum.id, atch: payload });
+    emit("refresh-data", { id: props.curriculum?.id, atch: payload });
     props.closeModal();
   } catch (err) {
     console.error("updateCurriculum error:", err?.response?.data || err);

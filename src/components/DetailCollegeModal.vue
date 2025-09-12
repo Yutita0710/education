@@ -1,30 +1,62 @@
 <template>
+  <!-- ✅ ทำให้มี root เดียว -->
   <div
     v-if="showModal"
     class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 text-gray-700"
   >
     <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-4xl relative">
-      <!-- ปุ่มปิด -->
-      <button
-        @click="handleClose"
-        class="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-        aria-label="Close modal"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          class="size-8 mr-2"
-        >
-          <path
-            fill-rule="evenodd"
-            d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm-1.72 6.97a.75.75 0 1 0-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 1 0 1.06 1.06L12 13.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L13.06 12l1.72-1.72a.75.75 0 1 0-1.06-1.06L12 10.94l-1.72-1.72Z"
-            clip-rule="evenodd"
-          />
-        </svg>
-      </button>
+      <div class="mb-6 grid grid-cols-[1fr_auto_1fr] items-center">
+        <div></div>
+        <h2 class="text-xl font-bold text-center">รายละเอียดสถาบัน</h2>
 
-      <h2 class="text-xl font-bold text-center mb-4">รายละเอียดสถาบัน</h2>
+        <div class="justify-self-end flex items-center gap-2">
+          <!-- ปุ่มดินสอ -->
+          <button
+            @click.stop="onEditClick"
+            :aria-describedby="detail?.id ? `tt-edit-${detail.id}` : 'tt-edit'"
+            type="button"
+            class="inline-flex items-center bg-[#F8B15D] text-white w-20 h-10 rounded-full hover:bg-orange-500 transition justify-center"
+            aria-label="Edit"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.5"
+              stroke="currentColor"
+              class="size-6"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+              />
+            </svg>
+            แก้ไข
+          </button>
+
+          <!-- ปุ่มปิด -->
+          <button
+            @click="handleClose"
+            type="button"
+            class="inline-flex items-center justify-center w-10 h-10 rounded-full text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition"
+            aria-label="Close modal"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              class="size-20"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm-1.72 6.97a.75.75 0 1 0-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 1 0 1.06 1.06L12 13.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L13.06 12l1.72-1.72a.75.75 0 1 0-1.06-1.06L12 10.94l-1.72-1.72Z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
 
       <!-- Loading -->
       <div v-if="isLoading" class="py-8 text-center text-gray-500">
@@ -85,11 +117,20 @@
             </label>
           </div>
           <div>
-            <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+            <div
+              class="relative overflow-x-auto shadow-md sm:rounded-lg"
+              :class="
+                (groupColleges?.length ?? 0) > 3
+                  ? 'overflow-y-auto max-h-[calc(3*3rem+3rem)]'
+                  : ''
+              "
+            >
               <table
                 class="w-full text-sm text-left rtl:text-right text-gray-500"
               >
-                <thead class="font-medium text-gray-700 uppercase bg-[#E2EDFC]">
+                <thead
+                  class="font-medium text-gray-700 uppercase bg-[#E2EDFC] sticky top-0 z-10"
+                >
                   <tr>
                     <th scope="col" class="px-6 py-3">ลำดับ</th>
                     <th scope="col" class="px-6 py-3">ชื่อสถาบัน</th>
@@ -121,9 +162,7 @@
                     >
                       {{ g.name || "-" }}
                     </th>
-                    <td class="px-6 py-4">
-                      {{ g.campus || "-" }}
-                    </td>
+                    <td class="px-6 py-4">{{ g.campus || "-" }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -209,10 +248,18 @@
       </div>
     </div>
   </div>
+
+  <!-- ✅ ย้ายไว้ใต้ root เดียวกัน และผูก state/handlers ให้ครบ -->
+  <EditCollegeModal
+    :showModal="showEditModal"
+    :selectedCollege="selectedCollege"
+    @close="closeEditModal"
+    @saved="onEditSaved"
+  />
 </template>
 
 <script setup>
-import { reactive, ref, computed, watch, onMounted } from "vue";
+import { reactive, ref, computed, watch, onMounted, toRaw } from "vue";
 import {
   getCollegesById,
   countryList,
@@ -220,18 +267,21 @@ import {
   countCurriculum,
   getCollegesGrouped,
 } from "@/services/apiService";
+import EditCollegeModal from "./EditCollegeModal.vue";
 
-/** =========== Props ============ */
+/** =========== Props/Emits ============ */
 const props = defineProps({
   showModal: { type: Boolean, default: false },
   closeModal: { type: Function, default: () => {} },
   collegeId: { type: [Number, String], default: null },
 });
+const emit = defineEmits(["request-edit", "close", "refresh-data"]);
 
 /** =========== State ============ */
 const isLoading = ref(false);
 const loadError = ref("");
 const groupColleges = ref([]);
+
 const detail = reactive({
   id: null,
   name: "",
@@ -239,22 +289,62 @@ const detail = reactive({
   country: null,
   province: null,
   province_name: null,
-
-  // จาก payload จริง
   countryName: "",
   provinceName: "",
   curriculumCount: 0,
-
   active: 0,
   institute_group: null,
   group: [],
 });
 
-const countryOptions = ref([]); // [{id,name,code}]
-const provinceOptions = ref([]); // [{id,name,country_id?}]
+/** ✅ State ของ Edit modal */
+const showEditModal = ref(false);
+const selectedCollege = ref(null);
+
+function onEditClick() {
+  // ส่งสำเนา object detail ให้ modal (ตัด proxy ออก)
+  selectedCollege.value = { ...toRaw(detail) };
+  showEditModal.value = true;
+
+  // ถ้าอยากแจ้งพาเรนต์ด้วยก็ยัง emit ได้นะ
+  emit("request-edit", { ...toRaw(detail) });
+}
+
+function closeEditModal() {
+  showEditModal.value = false;
+  selectedCollege.value = null;
+}
+
+// เดิมชื่อ handleRefreshData (มาจาก modal เก่า) → เปลี่ยนเป็น handleSaved
+function handleSaved(updated) {
+  // อัปเดต state ปัจจุบันให้ตรงกับค่าที่เซฟ (หรือจะเรียก fetchDetail() ก็ได้)
+  Object.assign(detail, {
+    name: updated.name ?? detail.name,
+    campus: updated.campus ?? detail.campus,
+    country: updated.country ?? detail.country,
+    province: updated.province ?? detail.province,
+    active:
+      typeof updated.active !== "undefined"
+        ? Number(updated.active)
+        : detail.active,
+    institute_group: updated.institute_group ?? detail.institute_group,
+  });
+
+  // ปิด modal
+  showEditModal.value = false;
+  selectedCollege.value = null;
+
+  // ถ้าต้องให้พาเรนต์รีเฟรชรายการจากเซิร์ฟเวอร์
+  emit("refresh-data", updated);
+
+  // หรือจะดึงใหม่ตรงนี้เลยก็ได้:
+  // fetchDetail();
+}
+/** ========== Masters ========== */
+const countryOptions = ref([]);
+const provinceOptions = ref([]);
 const TH_ID = ref(null);
 
-/** ========== Utils ========== */
 const isThai = (x) => {
   const name = String(x?.name || "")
     .toLowerCase()
@@ -270,7 +360,7 @@ const isThai = (x) => {
   );
 };
 
-/** ========== Derived display (ใช้ชื่อจาก payload ก่อน) ========== */
+/** ========== Displays ========== */
 const countryDisplay = computed(() => {
   const byPayload = (detail.countryName || "").trim();
   if (byPayload) return byPayload;
@@ -294,23 +384,16 @@ const provinceNameById = computed(() => {
 });
 
 const provinceDisplay = computed(() => {
-  // 1) ถ้า backend ส่งชื่อมาแล้ว ใช้ก่อน
   const byPayload = (detail.provinceName || detail.province_name || "").trim();
   if (byPayload) return byPayload;
 
-  // 2) ถ้ามี province เป็น id/code ให้ลอง map จาก provinceOptions
   const key = (detail.province ?? "").toString().trim();
   if (key) {
-    const found = provinceNameById.value.get(key);
-    if (found && found.trim()) return found;
-    // บาง backend อาจให้ key เป็นตัวเลข/สตริงสลับกัน
-    const alt = provinceNameById.value.get(String(Number(key)));
-    if (alt && alt.trim()) return alt;
-    // ถ้าไม่พบใน map ให้แสดงค่าดิบ (เช่น ต่างประเทศเก็บเป็น free text)
-    return key;
+    const found =
+      provinceNameById.value.get(key) ??
+      provinceNameById.value.get(String(Number(key)));
+    return found && found.trim() ? found : key;
   }
-
-  // 3) ไม่พบอะไรเลย
   return "-";
 });
 
@@ -323,7 +406,6 @@ async function fetchMasterOptions() {
       name: c.name ?? c.country_name ?? c.code ?? "",
       code: (c.code ?? "").toUpperCase(),
     }));
-
     countries = countries.sort((a, b) => {
       const aThai = isThai(a),
         bThai = isThai(b);
@@ -347,10 +429,17 @@ async function fetchMasterOptions() {
     );
     provinceOptions.value = provinces;
   } catch (e) {
-    // ไม่ต้อง block การแสดงผล เพราะเรามีชื่อจาก payload อยู่แล้ว
     console.warn("โหลด master options ล้มเหลว (จะใช้ชื่อจาก payload):", e);
   }
 }
+
+const isFilled = (v) =>
+  v !== null && v !== undefined && String(v).trim() !== "";
+const pickFirst = (...vals) => vals.find(isFilled);
+const toIntOrNull = (v) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+};
 
 async function fetchDetail() {
   if (!props.collegeId) return;
@@ -358,12 +447,11 @@ async function fetchDetail() {
   loadError.value = "";
 
   try {
-    // 1) ดึงรายละเอียด
     const res = await getCollegesById(props.collegeId);
     const data = res?.data?.data ?? res?.data?.item ?? res?.data ?? null;
     if (!data) throw new Error("ไม่พบข้อมูลจากเซิร์ฟเวอร์");
 
-    // map detail
+    // ===== map หลัก =====
     detail.id = data.id ?? null;
     detail.name = data.name ?? "";
     detail.campus = data.campus ?? "";
@@ -374,49 +462,98 @@ async function fetchDetail() {
     detail.provinceName = data.provinceName ?? "";
     detail.active = Number(data.active ?? 0) === 1 ? 1 : 0;
 
-    // ✅ normalize institute_group เป็นสตริง (หรือ null ถ้าไม่มี)
-    const groupId = data.institute_group != null ? String(data.institute_group) : "";
-    detail.institute_group = groupId || null;
+    // ===== group id / name (รองรับหลายฟิลด์ + เก็บทั้งคู่) =====
+    const rawGroupId = pickFirst(
+      data.institute_group_id,
+      data.institute_group,
+      data.group_id,
+      data.group?.id
+    );
+    const rawGroupName = pickFirst(
+      data.institute_group_name,
+      data.group_name,
+      data.group?.name
+    );
 
-    // 2) ดึง count + group (ถ้ามี groupId)
+    detail.institute_group = isFilled(rawGroupId) ? String(rawGroupId) : null;
+    detail.institute_group_name = rawGroupName || "";
+
+    const groupIdNum = toIntOrNull(detail.institute_group);
+
+    // ===== ดึง count + สมาชิกในกลุ่ม (ส่งเลขให้แน่ใจ) =====
     const [countRes, groupRes] = await Promise.all([
       countCurriculum({}),
-      groupId ? getCollegesGrouped(groupId) : Promise.resolve({ data: [] }),
+      groupIdNum
+        ? getCollegesGrouped(groupIdNum)
+        : Promise.resolve({ data: [] }),
     ]);
 
-    // สร้างแผนที่ count ต่อ college_id
+    // ===== นับหลักสูตรของแต่ละสถาบัน =====
     const countsArr = countRes?.data?.data ?? countRes?.data ?? [];
     const countsMap = {};
     for (const cur of countsArr) {
-      // พยายามรองรับหลายฟิลด์ที่อาจมาจาก API
       const key = Number(cur.college_id ?? cur.id ?? cur.collegeId);
       const cnt = Number(cur.curriculum_count ?? cur.count ?? 0);
       if (Number.isFinite(key)) countsMap[key] = Number.isFinite(cnt) ? cnt : 0;
     }
     detail.curriculumCount = countsMap[Number(detail.id)] ?? 0;
 
-    // ดึงรายการในกลุ่ม แล้วกรองให้ตรงกับ groupId (กันกรณี backend ส่งรายการปนมา)
-    const raw =
-      groupRes?.data?.data ??
-      groupRes?.data?.items ??
-      groupRes?.data?.rows ??
-      groupRes?.data ??
+    // ===== เดา group name จาก response ถ้ายังว่าง =====
+    const inferredGroupName = pickFirst(
+      groupRes?.data?.group_name,
+      groupRes?.data?.group?.name,
+      groupRes?.data?.name
+    );
+    if (!detail.institute_group_name && inferredGroupName) {
+      detail.institute_group_name = inferredGroupName;
+    }
+
+    // ===== normalize รายการสมาชิกกลุ่มจาก response หลายรูปแบบ =====
+    let rawRows =
+      (Array.isArray(groupRes?.data?.data) && groupRes.data.data) ||
+      (Array.isArray(groupRes?.data?.items) && groupRes.data.items) ||
+      (Array.isArray(groupRes?.data?.rows) && groupRes.data.rows) ||
+      (Array.isArray(groupRes?.data?.colleges) && groupRes.data.colleges) ||
+      (Array.isArray(groupRes?.data?.members) && groupRes.data.members) ||
+      (Array.isArray(groupRes?.data?.group?.colleges) &&
+        groupRes.data.group.colleges) ||
+      (Array.isArray(groupRes?.data) && groupRes.data) ||
       [];
-    const rows = Array.isArray(raw) ? raw : [];
 
-    const filtered = groupId
-      ? rows.filter(
-          (r) => String(r.institute_group ?? r.group_id ?? r.group) === groupId
+    const normalized = rawRows.map((r) => {
+      const rid = toIntOrNull(
+        pickFirst(
+          r.institute_group_id,
+          r.institute_group,
+          r.group_id,
+          r.group?.id
         )
-      : [];
+      );
+      const cid = toIntOrNull(pickFirst(r.id, r.college_id, r.collegeId));
+      return {
+        id: cid,
+        name: r.name ?? r.college_name ?? "",
+        campus: r.campus ?? r.campus_name ?? "",
+        rGroupId: rid,
+      };
+    });
 
-    // ✅ แมปให้ id = college id จริง ๆ และแนบ institute_group ไว้ด้วย
-    groupColleges.value = filtered.map((r) => ({
-      id: r.id ?? null, // <-- college id
+    // ถ้า response ใส่ group id มาให้ → filter ให้เหลือเฉพาะกลุ่มเดียวกัน
+    // ถ้าไม่มี rGroupId เลย (endpoint คืนเฉพาะกลุ่มอยู่แล้ว) → ใช้ทั้งหมด
+    const hasRid = normalized.some((x) => x.rGroupId != null);
+    const matched =
+      groupIdNum != null
+        ? hasRid
+          ? normalized.filter((x) => x.rGroupId === groupIdNum)
+          : normalized
+        : [];
+
+    groupColleges.value = matched.map((r) => ({
+      id: r.id ?? null,
       name: r.name ?? "",
       campus: r.campus ?? "",
-      institute_group: String(r.institute_group ?? groupId ?? ""),
-      curriculumCount: countsMap[Number(r.id)] ?? 0,
+      institute_group: String(groupIdNum ?? ""),
+      curriculumCount: r.id != null ? countsMap[r.id] ?? 0 : 0,
     }));
   } catch (e) {
     console.error(e);
@@ -428,7 +565,7 @@ async function fetchDetail() {
 
 /** ========== Lifecycle & watchers ========== */
 onMounted(async () => {
-  fetchMasterOptions(); // optional
+  fetchMasterOptions();
   if (props.showModal && props.collegeId) await fetchDetail();
 });
 
@@ -450,6 +587,15 @@ watch(
 /** ========== Actions ========== */
 function handleClose() {
   if (isLoading.value) return;
-  props.closeModal?.();
+  props.closeModal?.(); // ปิดแบบ prop function
+  emit("close"); // และส่ง event เผื่อพาเรนต์ฟัง @close
+}
+
+function onEditSaved(payload) {
+  showEditModal.value = false;
+  selectedCollege.value = null;
+  // ดึงใหม่ให้ detail อัปเดต หรือจะ merge เฉพาะฟิลด์ก็ได้
+  fetchDetail(); // ✅ ชัวร์สุดเพราะดึงจาก backend
+  emit("refresh-data", payload); // ถ้าพาเรนต์ต้องรีเฟรช list ด้วย
 }
 </script>

@@ -281,26 +281,10 @@ function closeEditModal() {
   selectedCurriculum.value = null;
 }
 async function handleRefreshData(e) {
-  // ปิด Edit
   showEditModal.value = false;
-
-  // แจ้ง parent ให้รีเฟรชลิสต์
-  emit("refreshData", e);
-  emit("refresh", e);
-
-  // เปิด Detail กลับ (ใช้ข้อมูลที่แก้ไขแล้ว)
-  const id =
-    e?.id ?? selectedCurriculum.value?.id ?? detailCurriculum.value?.id ?? null;
-
-  // แบบเร็ว ๆ (ไม่เรียก API): รวม payload เข้ากับที่เคยเปิดอยู่
-  if (id) {
-    detailCurriculum.value = {
-      ...(detailCurriculum.value || {}),
-      ...(e?.atch || {}), // payload ที่ Edit ส่งคืน
-      id,
-    };
-  }
-  showDetailModal.value = true;
+  // ส่งผลลัพธ์ขึ้นพาเรนต์ให้รวม/เปิดโมดัลตาม flow ของพาเรนต์
+  emit("refresh-data", e);
 }
+
 </script>
 

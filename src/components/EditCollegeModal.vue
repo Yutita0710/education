@@ -688,6 +688,9 @@ async function saveCollege() {
     isLoading.value = false;
   }
 }
+
+
+
 </script>
 
 <style scoped>

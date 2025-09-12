@@ -24,10 +24,10 @@
       class="bg-white rounded-[1.4rem] border shadow-lg px-4 py-4 md:px-6 md:py-5 w-full h-auto md:-mt-[8rem] md:w-[80%] mt-0 mx-auto text-[#111C2D]/80"
     >
       <div
-        class="flex flex-col gap-2 lg:grid lg:grid-cols-[3fr,1fr,1fr,1fr,1fr,auto] lg:gap-6 w-full"
+        class="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_1fr_auto] gap-3 items-center mb-3"
       >
-        <!-- Search Box -->
-        <div class="w-full">
+        <!-- Search -->
+        <div class="min-w-0">
           <div
             class="relative w-full flex items-center px-3 py-2 space-x-2 border border-gray-300 rounded-lg"
           >
@@ -49,39 +49,56 @@
               @keyup.enter="doSearch"
               type="text"
               placeholder="ค้นหาชื่อสถาบัน/วิทยาเขต"
-              class="flex-1 min-w-0 bg-transparent placeholder-gray-400 text-gray-900 outline-none px-2 py-[0.15rem] text-sm md:text-base"
+              class="flex-1 min-w-0 w-full bg-transparent placeholder-gray-400 text-gray-900 outline-none px-2 py-[0.15rem] text-sm md:text-base"
             />
           </div>
         </div>
 
+        <!-- Country -->
         <div>
           <v-select
             v-model="selectedCountry"
             :options="countryOptions"
             label="name"
-            :reduce="(country) => country.id"
-            class="font-[15px]"
+            :reduce="(c) => c.id"
+            class="w-full font-[15px]"
             placeholder="เลือกประเทศ"
           />
         </div>
+
+        <!-- Province -->
         <div>
-          <v-select
-            v-model="selectedProvince"
-            :options="filteredProvinceOptions"
-            label="name"
-            :reduce="(provinces) => provinces.id"
-            class="font-[15px]"
-            placeholder="เลือกจังหวัด"
-            @input="selectedProvince = $event ? $event.id : null"
-          />
+          <!-- เลือกไทย: ใช้ v-select รายชื่อจังหวัด -->
+          <template v-if="isThailandSelected">
+            <v-select
+              v-model="selectedProvince"
+              :options="filteredProvinceOptions"
+              label="name"
+              :reduce="(p) => String(p.id)"
+              class="w-full font-[15px]"
+              placeholder="เลือกจังหวัด"
+            />
+          </template>
+
+          <!-- อื่นๆ (รวมถึงยังไม่เลือกประเทศ): ใช้ input ให้พิมพ์เอง -->
+          <template v-else>
+            <input
+              v-model.trim="provinceText"
+              type="text"
+              class="w-full rounded-lg border px-3 py-3"
+              placeholder="พิมพ์จังหวัด/รัฐ/เมือง (สำหรับต่างประเทศ)"
+              @keyup.enter="doSearch"
+            />
+           
+          </template>
         </div>
 
-        
+        <!-- Status -->
         <div>
           <Listbox
             v-model="selectedStatus"
             as="div"
-            class="relative w-full rounded-lg border px-2 py-[0.15rem]"
+            class="relative w-full rounded-lg border px-2"
           >
             <ListboxButton
               class="relative w-full inline-flex items-center justify-between px-3 py-3"
@@ -94,9 +111,8 @@
                 aria-hidden="true"
               />
             </ListboxButton>
-
             <ListboxOptions
-              class="absolute z-20 mt-2 max-h-60 w-full md:w-[14rem] overflow-auto rounded-xl bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 left-0"
+              class="absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-xl bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 left-0"
             >
               <ListboxOption
                 v-for="status in statusOptions"
@@ -116,8 +132,8 @@
           </Listbox>
         </div>
 
-        <!-- ปุ่มล้างค่า -->
-        <div class="flex justify-left items-center">
+        <!-- Reset button -->
+        <div class="flex items-center justify-center md:justify-end">
           <button
             @click="reset"
             class="shrink-0 bg-[#F8B15D] hover:bg-[#FE7743] text-white px-6 py-3 rounded-full shadow font-medium inline-flex items-center gap-2"
@@ -178,11 +194,12 @@ const statusOptions = [
   { id: "1", name: "ใช้งาน" },
   { id: "0", name: "ไม่ใช้งาน" },
 ];
-const ispublicOptions = [
-  { id: "1", value: true, name: "เผยแพร่" },
-  { id: "0", value: false, name: "ไม่เผยแพร่" },
-];
 
+const thId = ref(null); // เก็บ id ของ "ประเทศไทย"
+const provinceText = ref(""); // สำหรับต่างประเทศ: พิมพ์ชื่อจังหวัดเอง
+const isThailandSelected = computed(
+  () => String(selectedCountry.value ?? "") === String(thId.value ?? "")
+);
 // จังหวัดตามประเทศ
 const filteredProvinceOptions = computed(() => {
   if (!selectedCountry.value) return provinceOptions.value;
@@ -196,23 +213,19 @@ watch(
   () => selectedCountry.value,
   () => {
     selectedProvince.value = null;
+    provinceText.value = "";
   }
 );
 
-// “ค่าจาก UI” (raw) -> ปล่อยว่างได้
 const paramsRaw = computed(() => ({
   search: (searchText.value || "").trim(),
   country: selectedCountry.value || "",
-  province: selectedProvince.value || "",
+  // ไทย → ใช้ selectedProvince, ต่างประเทศ → ใช้ provinceText
+  province: isThailandSelected.value
+    ? selectedProvince.value || ""
+    : provinceText.value || "",
   status: selectedStatus.value?.id ?? "",
 }));
-
-// แปลงค่าหลายรูปแบบ -> boolean | undefined (undefined = ไม่กรอง)
-const toBoolish = (v) => {
-  if (v === true || v === "true" || v === 1 || v === "1") return true;
-  if (v === false || v === "false" || v === 0 || v === "0") return false;
-  return undefined;
-};
 
 const paramsForApi = computed(() => {
   const r = { ...paramsRaw.value };
@@ -225,7 +238,6 @@ const paramsForApi = computed(() => {
 
   if ("status" in out) out.status = Number(out.status); // "0"/"1" -> 0/1
 
-  
   return out;
 });
 
@@ -241,6 +253,7 @@ watch(
     selectedProvince,
     selectedStatus,
     selectedIspublic,
+    provinceText, // ← เพิ่มตัวนี้
   ],
   () => {
     if (!ready.value) return; // ยัง init อยู่ ไม่ต้อง emit
@@ -271,24 +284,26 @@ const doSearch = () => {
 function prefillFromUrl() {
   const q = route.query;
 
-  // search
   if (q.search != null) searchText.value = String(q.search);
 
-  // country / province
   if (q.country != null && String(q.country).trim() !== "") {
     selectedCountry.value = String(q.country);
   }
+
   if (q.province != null && String(q.province).trim() !== "") {
-    selectedProvince.value = String(q.province);
+    // ถ้า URL มี province มาก่อน ให้ลงช่องที่ถูกต้องตามประเทศ
+    if (String(selectedCountry.value) === String(thId.value)) {
+      selectedProvince.value = String(q.province);
+    } else {
+      provinceText.value = String(q.province);
+    }
   }
 
-  // status ("0"|"1")
   if (q.status === "0" || q.status === "1") {
     selectedStatus.value =
       statusOptions.find((o) => o.id === String(q.status)) ?? null;
   }
 }
-
 
 // โหลด options
 onMounted(async () => {
@@ -325,7 +340,7 @@ onMounted(async () => {
     // อย่าเซ็ต selectedCountry เอง (เพื่อไม่ให้ country ค้าง "87")
     const th = countries.find(isThai);
     const TH_ID = th ? th.id : null;
-
+    thId.value = TH_ID;
     // ===== provinces (ติด tag country_id = TH_ID เพื่อให้ฟิลเตอร์ทำงานเมื่อเลือก "ไทย") =====
     const provinceRes = await provinceList();
     let provinces = (provinceRes?.data ?? []).map((p) => ({
@@ -357,6 +372,7 @@ onMounted(async () => {
 const reset = () => {
   selectedCountry.value = null;
   selectedProvince.value = null;
+  provinceText.value = "";
   selectedStatus.value = null;
   selectedIspublic.value = null;
   searchText.value = "";

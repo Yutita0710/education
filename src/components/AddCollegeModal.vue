@@ -264,7 +264,7 @@ const statusOptions = [
 //   { id: 1, value: true, name: "เผยแพร่" },
 //   { id: 0, value: false, name: "ไม่เผยแพร่" },
 // ];
-
+const emit = defineEmits(["close","saved"]);
 const selectedStatus = ref(statusOptions[0]);
 // const selectedIspublic = ref(ispublicOptions[0]);
 /* =========================
@@ -573,7 +573,13 @@ async function saveCollege() {
   console.log("👉 payload:", payload);
   isLoading.value = true;
   try {
-    await addEducationCollege(payload);
+    const res = await addEducationCollege(payload);
+   // เดาทางหลายรูปแบบของ API เพื่อให้หยิบ id ได้เสมอ
+   const newId =
+     res?.data?.data?.id ??
+     res?.data?.item?.id ??
+     res?.data?.id ??
+     res?.id ?? null;
     await Swal.fire({
       icon: "success",
       title: "บันทึกข้อมูลสำเร็จ!",
@@ -582,7 +588,9 @@ async function saveCollege() {
       timerProgressBar: true,
     });
     clearForm();
-    props.closeModal?.();
+  // ส่ง id กลับให้พาเรนต์ แล้วปิด modal
+  emit("saved", { id: newId, ...payload });
+  props.closeModal?.();
   } catch (error) {
     console.error(error);
     await Swal.fire({

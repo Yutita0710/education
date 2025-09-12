@@ -150,7 +150,7 @@
                 class="relative w-full inline-flex items-center justify-between px-3 py-[0.7rem]"
               >
                 <span class="truncate">{{
-                  status?.name || "สถานะหลักสูตร"
+                  status?.name || "สถานะการใช้งาน"
                 }}</span>
                 <ChevronUpDownIcon
                   class="w-5 h-5 text-gray-500"
@@ -306,13 +306,11 @@ const curriculum_published = ref(null); // { id: boolean|null, name: string } | 
 const status = ref(null); // { id: boolean|null, name: string } | null
 
 const published = [
-  { id: null, name: "ทั้งหมด" },
   { id: true, name: "เผยแพร่" },
   { id: false, name: "ไม่เผยแพร่" },
 ];
 
 const status_curriculum = [
-  { id: null, name: "ทั้งหมด" },
   { id: "1", name: "ใช้งาน" },
   { id: "0", name: "ไม่ใช้งาน" },
 ];

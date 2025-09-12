@@ -94,6 +94,23 @@
       <div class="circle" tabindex="0"></div>
     </div>
   </div>
+
+  <DetailCurriculumModal
+    :key="detailCurriculum?.id ?? (showDetailModal ? 'open' : 'closed')"
+    :showModal="showDetailModal"
+    :curriculum="detailCurriculum"
+    :closeModal="closeDetailModal"
+    @refresh-data="fetchData"
+  />
+
+  <EditCurriculumModal
+    v-if="showEditModal"
+    :key="editingCurriculum?.id ?? 'new'"
+    :showModal="showEditModal"
+    :curriculum="editingCurriculum"
+    :closeModal="closeEditModal"
+    @refresh-data="handleEditSaved"
+  />
 </template>
 
 <script setup>
@@ -105,6 +122,8 @@ import SearchFormAdmin from "@/components/SearchFormAdmin.vue";
 import AddCurriculumModal from "@/components/AddCurriculumModal.vue";
 import PaginationBar from "@/components/PaginationBar.vue";
 import DataTableAdmin from "@/components/DataTableAdmin.vue";
+import DetailCurriculumModal from "@/components/DetailCurriculumModal.vue";
+import EditCurriculumModal from "@/components/EditCurriculumModal.vue";
 
 const isAdmin = !!localStorage.getItem("token");
 const route = useRoute();
@@ -165,6 +184,62 @@ const clean = (obj) => {
   }
   return out;
 };
+
+const showDetailModal = ref(false);
+const detailCurriculum = ref(null); // <- ใช้กับ DetailCurriculumModal
+
+const showEditModal = ref(false);
+const editingCurriculum = ref(null); // <- ใช้กับ EditCurriculumModal
+const selectedCurriculum = ref(null);
+// เปิดรายละเอียด
+function openDetail(row) {
+  detailCurriculum.value = { ...(row || {}) };
+  showDetailModal.value = true;
+}
+
+function closeDetailModal() {
+  // <- ชื่อต้องตรงกับ :closeModal
+  showDetailModal.value = false;
+  detailCurriculum.value = null;
+}
+
+function openEditFromDetail(row) {
+  // <- ถูกเรียกจาก @request-edit ของ Detail
+  showDetailModal.value = false; // ปิด detail ก่อน
+  editingCurriculum.value = { ...(row || detailCurriculum.value || {}) };
+  showEditModal.value = true;
+}
+
+function closeEditModal() {
+  // <- ชื่อต้องตรงกับ :closeModal
+  showEditModal.value = false;
+  editingCurriculum.value = null;
+}
+
+// เมื่อ Edit บันทึกเสร็จ -> ปิด Edit -> รวมข้อมูล/หรือดึงใหม่ -> เปิด Detail
+async function handleEditSaved(e) {
+  showEditModal.value = false;
+
+  const id =
+    e?.id ?? editingCurriculum.value?.id ?? detailCurriculum.value?.id ?? null;
+
+  editingCurriculum.value = null;
+
+  // ถ้ามี service ดึง detail ให้ใช้ (ไม่มีก็รวม payload กลับ)
+  // const { data } = await getEducationById(id);
+  // detailCurriculum.value = data?.data ?? data ?? { ...(detailCurriculum.value||{}), ...(e?.atch||{}), id };
+
+  detailCurriculum.value = {
+    ...(detailCurriculum.value || {}),
+    ...(e?.atch || {}),
+    id,
+  };
+
+  showDetailModal.value = true;
+
+  // รีเฟรชตารางด้านล่างด้วยถ้าต้องการ
+  fetchData();
+}
 
 function syncStateFromQuery() {
   const q = route.query;
@@ -237,7 +312,12 @@ async function fetchData() {
     };
 
     console.log("👉 filters:", filters);
-    console.log("👉 fetchData page/limit:", state.value.page, state.value.limit, filters);
+    console.log(
+      "👉 fetchData page/limit:",
+      state.value.page,
+      state.value.limit,
+      filters
+    );
     // ❗️ถ้า service ของคุณเป็น (page, limit, filters) ให้ใช้บรรทัดนี้แทน:
     const res = await getEducationPaginated(
       state.value.page,
@@ -245,7 +325,7 @@ async function fetchData() {
       filters
     );
     console.log(res);
-if (mySeq !== reqSeq) return;
+    if (mySeq !== reqSeq) return;
     const rows = res?.data?.data ?? [];
     const m = res?.data?.meta ?? {};
 
@@ -311,7 +391,6 @@ function closeCurriculumModal() {
   showCurriculumModal.value = false;
   fetchData();
 }
-
 
 // เปลี่ยน URL (รวม back/forward) → sync + fetch
 watch(

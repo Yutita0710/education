@@ -92,7 +92,7 @@
               :key="item.id"
               :class="[
                 'hover:bg-gray-50',
-                item.active === 0 ? 'bg-gray-100 text-gray-300' : '',
+                item.active === 0 ? 'bg-gray-100 text-gray-400' : '',
               ]"
             >
               <td class="border px-2 py-1 text-center">
@@ -241,6 +241,7 @@
       :showModal="showCollegeModal"
       :closeModal="closeCollegeModal"
       @close="closeCollegeModal"
+      @saved="handleCollegeAdded"
     />
 
     <!-- Edit Modal - เพิ่มส่วนนี้ -->
@@ -248,18 +249,18 @@
       :showModal="showEditModal"
       :selectedCollege="selectedCollege"
       @close="showEditModal = false"
-      @saved="fetchData"
+      @saved="handleCollegeEdited"
     />
 
     <!-- Detail Modal -->
     <DetailCollegeModal
-      v-if="showCollegeDetailModal && selectedCollegeDetail"
-      :key="selectedCollegeDetail?.id"
-      :showModal="showCollegeDetailModal"
-      :closeModal="closeCollegeDetailModal"
-      :collegeId="selectedCollegeDetail?.id ?? null"
-      @close="closeCollegeDetailModal"
-    />
+    v-if="showCollegeDetailModal && selectedCollegeDetail"
+    :key="selectedCollegeDetail?.id"
+    :showModal="showCollegeDetailModal"
+    :closeModal="closeCollegeDetailModal"
+    :collegeId="selectedCollegeDetail?.id ?? null"
+    @close="closeCollegeDetailModal"
+  />
   </div>
   <!-- Loading Overlay -->
   <div v-if="isLoading" class="loading-overlay">
@@ -275,7 +276,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch } from "vue";
+import { ref, reactive, computed, watch, nextTick } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
   getCollegesPaginated,
@@ -312,6 +313,24 @@ function seedIdNameMap(target, list = []) {
   }
 }
 
+ async function handleCollegeAdded(e) {
+   // e.id มาจาก AddCollegeModal
+   selectedCollegeDetail.value = { id: e?.id };
+   showCollegeDetailModal.value = true;
+   // รีเฟรชตารางหลังเปิด detail (กัน overlay มาบัง)
+   await nextTick();
+   fetchData();
+ }
+
+ async function handleCollegeEdited(e) {
+   // ปิด edit (เผื่อยังเปิดอยู่)
+   showEditModal.value = false;
+   // เปิด detail ของ id ที่แก้ไข
+   selectedCollegeDetail.value = { id: e?.id };
+   showCollegeDetailModal.value = true;
+   await nextTick();
+   fetchData();
+ }
 async function loadMastersOnce() {
   if (mastersLoaded.value) return;
   try {
@@ -611,7 +630,7 @@ watch(
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 9999;
+  z-index: 900;
 }
 
 /* From Uiverse.io by forgingdestiny */
