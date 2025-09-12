@@ -38,7 +38,7 @@
         class="overflow-y-auto md:overflow-y-hidden border border-gray-300 rounded-lg"
       >
         <table
-          class="w-full border-collapse border border-gray-300 text-sm sm:text-base"
+          class="table-fixed w-full border-collapse border border-gray-300 text-sm sm:text-base min-w-0"
         >
           <thead>
             <tr class="bg-[#E2EDFC] font-bold">
@@ -48,13 +48,11 @@
                 กลุ่มสถาบัน
               </th>
               <th
-                class="border px-2 py-[0.7rem] font-bold whitespace-nowrap w-[400px]"
+                class="border px-2 py-[0.7rem] font-bold whitespace-nowrap w-[200px]"
               >
                 ชื่อสถาบัน
               </th>
-              <th
-                class="border px-2 py-[0.7rem] font-bold whitespace-nowrap w-[200px]"
-              >
+              <th class="border px-2 py-[0.7rem] font-bold w-[100px]">
                 วิทยาเขต
               </th>
 
@@ -63,9 +61,7 @@
               >
                 ประเทศ
               </th>
-              <th
-                class="border px-2 py-[0.7rem] font-bold whitespace-nowrap w-[100px]"
-              >
+              <th class="border px-2 py-[0.7rem] font-bold w-[100px]">
                 จังหวัด
               </th>
               <th
@@ -106,10 +102,7 @@
               <td class="border px-2 py-1 break-words">
                 {{ item.provinceName }}
               </td>
-              <td
-                class="border px-2 py-1 break-words cursor-pointer"
-                @click="goToCurriculum(item.name)"
-              >
+              <td class="border px-2 py-1 break-words cursor-pointer">
                 {{ item.curriculumCount || 0 }}
               </td>
 
@@ -239,7 +232,6 @@
     <!-- Add Modal -->
     <AddCollegeModal
       :showModal="showCollegeModal"
-      :closeModal="closeCollegeModal"
       @close="closeCollegeModal"
       @saved="handleCollegeAdded"
     />
@@ -254,13 +246,14 @@
 
     <!-- Detail Modal -->
     <DetailCollegeModal
-    v-if="showCollegeDetailModal && selectedCollegeDetail"
-    :key="selectedCollegeDetail?.id"
-    :showModal="showCollegeDetailModal"
-    :closeModal="closeCollegeDetailModal"
-    :collegeId="selectedCollegeDetail?.id ?? null"
-    @close="closeCollegeDetailModal"
-  />
+      v-if="showCollegeDetailModal && selectedCollegeDetail"
+      :key="`${selectedCollegeDetail?.id}-${detailKey}`"
+      :showModal="showCollegeDetailModal"
+      :closeModal="closeCollegeDetailModal"
+      :collegeId="selectedCollegeDetail?.id ?? null"
+      @close="closeCollegeDetailModal"
+      @saved="handleCollegeEdited"
+    />
   </div>
   <!-- Loading Overlay -->
   <div v-if="isLoading" class="loading-overlay">
@@ -281,8 +274,8 @@ import { useRoute, useRouter } from "vue-router";
 import {
   getCollegesPaginated,
   countCurriculum,
-  provinceList,   // ← ใช้ API provinces
-  countryList,    // ← ใช้ API countries
+  provinceList, // ← ใช้ API provinces
+  countryList, // ← ใช้ API countries
 } from "@/services/apiService";
 
 import SearchCollegeAdmin from "@/components/SearchCollegeAdmin.vue";
@@ -303,9 +296,19 @@ function seedIdNameMap(target, list = []) {
   for (const it of list) {
     // รองรับหลายรูปแบบ field ของ API
     const id =
-      it?.id ?? it?.country_id ?? it?.province_id ?? it?.value ?? it?.code ?? it?.pk;
+      it?.id ??
+      it?.country_id ??
+      it?.province_id ??
+      it?.value ??
+      it?.code ??
+      it?.pk;
     const name =
-      it?.name_th ?? it?.thai_name ?? it?.nameTh ?? it?.name ?? it?.label ?? it?.title;
+      it?.name_th ??
+      it?.thai_name ??
+      it?.nameTh ??
+      it?.name ??
+      it?.label ??
+      it?.title;
     if (id != null && name) {
       const keyNum = Number(id);
       target.set(Number.isFinite(keyNum) ? keyNum : String(id), String(name));
@@ -313,28 +316,43 @@ function seedIdNameMap(target, list = []) {
   }
 }
 
- async function handleCollegeAdded(e) {
-   // e.id มาจาก AddCollegeModal
-   selectedCollegeDetail.value = { id: e?.id };
-   showCollegeDetailModal.value = true;
-   // รีเฟรชตารางหลังเปิด detail (กัน overlay มาบัง)
-   await nextTick();
-   fetchData();
- }
+async function handleCollegeAdded(e) {
+  // e.id มาจาก AddCollegeModal
+  selectedCollegeDetail.value = { id: e?.id };
+  showCollegeDetailModal.value = true;
+  // รีเฟรชตารางหลังเปิด detail (กัน overlay มาบัง)
+  await nextTick();
+  fetchData();
+}
 
- async function handleCollegeEdited(e) {
-   // ปิด edit (เผื่อยังเปิดอยู่)
-   showEditModal.value = false;
-   // เปิด detail ของ id ที่แก้ไข
-   selectedCollegeDetail.value = { id: e?.id };
-   showCollegeDetailModal.value = true;
-   await nextTick();
-   fetchData();
- }
+const detailKey = ref(0); // ใช้บังคับรีโหลดโมดัลรายละเอียด (ถ้าต้องการ)
+
+async function handleCollegeEdited(e) {
+  // ปิดหน้าต่างแก้ไขก่อน
+  showEditModal.value = false;
+
+  // (ทางเลือก) อัปเดตแถวที่แก้ไขแบบ optimistic เพื่อให้ผู้ใช้เห็นผลทันที
+  const i = rows.value.findIndex((r) => String(r.id) === String(e?.id));
+  if (i > -1) {
+    rows.value[i] = mapCollege({ ...rows.value[i], ...e }); // รวมค่าที่แก้
+  }
+
+  // รีเฟรชข้อมูลจากเซิร์ฟเวอร์เพื่อให้ข้อมูลตรงจริง
+  await fetchData();
+
+  // เปิดโมดัลรายละเอียดของรายการที่เพิ่งแก้ (ถ้าต้องการ)
+  selectedCollegeDetail.value = { id: e?.id };
+  detailKey.value++; // บังคับรีเมานท์ให้ดึงข้อมูลล่าสุดเสมอ
+  showCollegeDetailModal.value = true;
+}
+
 async function loadMastersOnce() {
   if (mastersLoaded.value) return;
   try {
-    const [provRes, countryRes] = await Promise.all([provinceList(), countryList()]);
+    const [provRes, countryRes] = await Promise.all([
+      provinceList(),
+      countryList(),
+    ]);
     const provinces = provRes?.data?.data ?? provRes?.data ?? [];
     const countries = countryRes?.data?.data ?? countryRes?.data ?? [];
     provincesRef.value.byId.clear();
@@ -351,7 +369,9 @@ const countsRef = ref({ byId: new Map(), byName: new Map() });
 const countsLoaded = ref(false);
 
 function normalizeNameKey(s) {
-  return String(s ?? "").trim().toLowerCase();
+  return String(s ?? "")
+    .trim()
+    .toLowerCase();
 }
 function hydrateCounts(list = []) {
   countsRef.value.byId.clear();
@@ -393,7 +413,9 @@ const meta = ref({
 });
 
 const colleges = computed(() => rows.value);
-const totalItems = computed(() => Number(meta.value?.total ?? rows.value.length));
+const totalItems = computed(() =>
+  Number(meta.value?.total ?? rows.value.length)
+);
 
 /** ---------- modal & selections ---------- */
 const showCollegeModal = ref(false);
@@ -410,7 +432,9 @@ const toInt = (v, d) => {
 const toOpt = (v) => {
   if (v == null) return "";
   const s = String(v).trim();
-  return s === "" || s.toLowerCase() === "undefined" || s.toLowerCase() === "null"
+  return s === "" ||
+    s.toLowerCase() === "undefined" ||
+    s.toLowerCase() === "null"
     ? ""
     : s;
 };
@@ -502,7 +526,7 @@ function mapCollege(c = {}, counts = countsRef.value) {
 
   return {
     ...c,
-    countryName: countryName || " ",  // กันคอลัมน์หด
+    countryName: countryName || " ", // กันคอลัมน์หด
     provinceName: provinceName || " ",
     curriculumCount,
   };
@@ -555,7 +579,8 @@ async function fetchData() {
         Math.max(
           1,
           Math.ceil(
-            (Number(m.total ?? 0) || 0) / (Number(m.per_page ?? state.limit) || 1)
+            (Number(m.total ?? 0) || 0) /
+              (Number(m.per_page ?? state.limit) || 1)
           )
         ),
     };
@@ -598,13 +623,28 @@ function onFiltersUpdate(payload) {
 }
 
 /** ---------- handlers ---------- */
-function onPageChange(page) { pushQuery({ page }); }
-function onPerPageChange(perPage) { pushQuery({ page: 1, limit: perPage }); }
-function openEditcollegeModal(item) { selectedCollege.value = item; showEditModal.value = true; }
-function openDetailCollegeModal(item) { selectedCollegeDetail.value = item; showCollegeDetailModal.value = true; }
-function closeCollegeModal() { showCollegeModal.value = false; }
-function closeCollegeDetailModal() { showCollegeDetailModal.value = false; selectedCollegeDetail.value = null; }
-function goToCurriculum(collegeName) { router.push({ path: "/education", query: { college_name: collegeName, page: 1 } }); }
+function onPageChange(page) {
+  pushQuery({ page });
+}
+function onPerPageChange(perPage) {
+  pushQuery({ page: 1, limit: perPage });
+}
+function openEditcollegeModal(item) {
+  selectedCollege.value = item;
+  showEditModal.value = true;
+}
+function openDetailCollegeModal(item) {
+  selectedCollegeDetail.value = item;
+  showCollegeDetailModal.value = true;
+}
+function closeCollegeModal() {
+  showCollegeModal.value = false;
+}
+function closeCollegeDetailModal() {
+  showCollegeDetailModal.value = false;
+  selectedCollegeDetail.value = null;
+}
+// หน้า List
 
 /** ---------- lifecycle ---------- */
 watch(

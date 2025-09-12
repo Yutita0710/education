@@ -72,51 +72,115 @@
 
       <!-- Content -->
       <div class="px-14 space-y-6 py-10" v-else>
-        <!-- แถวทั่วไป (2 คอลัมน์) -->
-        <dl class="grid grid-cols-[210px_1fr] gap-x-6 gap-y-3">
-          <dt class="text-gray-600 font-semibold">ชื่อสถาบัน</dt>
-          <dd class="text-gray-900">{{ collegeName }}</dd>
+        <!-- 2 คอลัมน์ -->
+        <dl class="grid grid-cols-[210px_minmax(0,1fr)] gap-x-6 gap-y-3">
+          <dt class="text-gray-600 font-semibold whitespace-nowrap">
+            ชื่อสถาบัน
+          </dt>
+          <dd
+            class="text-gray-900 min-w-0 whitespace-normal break-words hyphens-auto"
+          >
+            {{ collegeName }}
+          </dd>
 
-          <dt class="text-gray-600 font-semibold">ชื่อหลักสูตร</dt>
-          <dd class="text-gray-900 break-words">{{ detail.name ?? "-" }}</dd>
+          <dt class="text-gray-600 font-semibold whitespace-nowrap">
+            ชื่อหลักสูตร
+          </dt>
+          <dd
+            class="text-gray-900 min-w-0 whitespace-normal break-words hyphens-auto"
+          >
+            {{ detail.name ?? "-" }}
+          </dd>
 
-          <dt class="text-gray-600 font-semibold">หลักสูตร</dt>
-          <dd class="text-gray-900 break-words">{{ description }}</dd>
+          <dt class="text-gray-600 font-semibold whitespace-nowrap">
+            หลักสูตร
+          </dt>
+          <dd
+            class="text-gray-900 min-w-0 whitespace-normal break-words hyphens-auto"
+          >
+            {{ description }}
+          </dd>
 
-          <dt class="text-gray-600 font-semibold">ระดับการศึกษา</dt>
-          <dd class="text-gray-900">{{ degreeName }}</dd>
+          <dt class="text-gray-600 font-semibold whitespace-nowrap">
+            ระดับการศึกษา
+          </dt>
+          <dd
+            class="text-gray-900 min-w-0 whitespace-normal break-words hyphens-auto"
+          >
+            {{ degreeName }}
+          </dd>
 
-          <dt class="text-gray-600 font-semibold">หลักสูตรสำหรับ</dt>
-          <dd class="text-gray-900">{{ typeNames }}</dd>
+          <dt class="text-gray-600 font-semibold whitespace-nowrap">
+            หลักสูตรสำหรับ
+          </dt>
+          <dd
+            class="text-gray-900 min-w-0 whitespace-normal break-words hyphens-auto"
+          >
+            {{ typeNames }}
+          </dd>
 
-          <dt class="text-gray-600 font-semibold">รายละเอียด</dt>
-          <dd class="text-gray-900 whitespace-pre-wrap">
+          <dt class="text-gray-600 font-semibold whitespace-nowrap">
+            รายละเอียด
+          </dt>
+          <dd
+            class="text-gray-900 min-w-0 whitespace-pre-wrap break-words hyphens-auto"
+          >
             {{ detail.remark ?? "-" }}
           </dd>
         </dl>
 
         <!-- มติ/วันที่ (4 คอลัมน์) -->
-        <dl class="mt-4 grid grid-cols-[210px_1fr_210px_1fr] gap-x-6 gap-y-3">
-          <dt class="text-gray-600 font-semibold">มติการประชุมครั้งที่</dt>
-          <dd class="text-gray-900">{{ meetingNo }}</dd>
+        <dl
+          class="mt-4 grid grid-cols-[210px_minmax(0,1fr)_210px_minmax(0,1fr)] gap-x-6 gap-y-3"
+        >
+          <dt class="text-gray-600 font-semibold whitespace-nowrap">
+            มติการประชุมครั้งที่
+          </dt>
+          <dd
+            class="text-gray-900 min-w-0 whitespace-normal break-words hyphens-auto"
+          >
+            {{ meetingNo }}
+          </dd>
 
-          <dt class="text-gray-600 font-semibold">วันที่ประชุม</dt>
-          <dd class="text-gray-900">{{ meetingDateTH }}</dd>
+          <dt class="text-gray-600 font-semibold whitespace-nowrap">
+            วันที่ประชุม
+          </dt>
+          <dd
+            class="text-gray-900 min-w-0 whitespace-normal break-words hyphens-auto"
+          >
+            {{ meetingDateTH }}
+          </dd>
         </dl>
 
         <!-- ปีเริ่ม/สิ้นสุด (4 คอลัมน์) -->
-        <dl class="mt-2 grid grid-cols-[210px_1fr_210px_1fr] gap-x-6 gap-y-3">
-          <dt class="text-gray-600 font-semibold">ปีที่เริ่มต้น (พ.ศ.)</dt>
-          <dd class="text-gray-900">{{ startYear }}</dd>
+        <dl
+          class="mt-2 grid grid-cols-[210px_minmax(0,1fr)_210px_minmax(0,1fr)] gap-x-6 gap-y-3"
+        >
+          <dt class="text-gray-600 font-semibold whitespace-nowrap">
+            ปีที่เริ่มต้น (พ.ศ.)
+          </dt>
+          <dd
+            class="text-gray-900 min-w-0 whitespace-normal break-words hyphens-auto"
+          >
+            {{ startYear }}
+          </dd>
 
-          <dt class="text-gray-600 font-semibold">ปีที่สิ้นสุด (พ.ศ.)</dt>
-          <dd class="text-gray-900">{{ endYear }}</dd>
+          <dt class="text-gray-600 font-semibold whitespace-nowrap">
+            ปีที่สิ้นสุด (พ.ศ.)
+          </dt>
+          <dd
+            class="text-gray-900 min-w-0 whitespace-normal break-words hyphens-auto"
+          >
+            {{ endYear }}
+          </dd>
         </dl>
 
         <!-- ป้ายสถานะ (2 คอลัมน์) -->
-        <dl class="mt-2 grid grid-cols-[210px_1fr] gap-x-6 gap-y-3">
-          <dt class="text-gray-600 font-semibold">สถานะการเผยแพร่</dt>
-          <dd>
+        <dl class="mt-2 grid grid-cols-[210px_minmax(0,1fr)] gap-x-6 gap-y-3">
+          <dt class="text-gray-600 font-semibold whitespace-nowrap">
+            สถานะการเผยแพร่
+          </dt>
+          <dd class="min-w-0">
             <span
               class="inline-flex items-center text-xs px-2.5 py-1 rounded-full"
               :class="
@@ -129,8 +193,10 @@
             </span>
           </dd>
 
-          <dt class="text-gray-600 font-semibold">สถานะการใช้งาน</dt>
-          <dd>
+          <dt class="text-gray-600 font-semibold whitespace-nowrap">
+            สถานะการใช้งาน
+          </dt>
+          <dd class="min-w-0">
             <span
               class="inline-flex items-center text-xs px-2.5 py-1 rounded-full"
               :class="
@@ -143,17 +209,6 @@
             </span>
           </dd>
         </dl>
-
-        <!-- ปุ่มปิด
-        <div class="flex justify-center pt-6">
-          <button
-            type="button"
-            @click="handleClose"
-            class="bg-[#F95668] hover:bg-[#F95668]/90 text-white px-6 py-2 rounded-full shadow transition"
-          >
-            ปิด
-          </button>
-        </div> -->
       </div>
     </div>
   </div>

@@ -2,6 +2,7 @@
   <div
     v-if="showModal"
     class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 text-gray-700"
+    @click.self="handleClose"
   >
     <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-4xl relative">
       <!-- <div
@@ -9,7 +10,8 @@
     > -->
       <!-- Close button (มุมขวาบน) -->
       <button
-        @click="closeModal"
+        type="button"
+        @click="handleClose"
         class="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
         aria-label="Close modal"
       >
@@ -26,9 +28,7 @@
           />
         </svg>
       </button>
-      <h2 class="text-xl font-bold text-center mb-4">
-        เพิ่มข้อมูลสถาบัน
-      </h2>
+      <h2 class="text-xl font-bold text-center mb-4">เพิ่มข้อมูลสถาบัน</h2>
 
       <!-- Form -->
       <form @submit.prevent="saveCollege" class="space-y-4">
@@ -71,7 +71,7 @@
             v-model="form.selectedCollege"
             :options="colleges"
             label="name"
-            :reduce="(c) => String(c.id)" 
+            track-by="id"
             placeholder="เลือกสถาบัน..."
           />
         </div>
@@ -219,7 +219,7 @@
           </button>
           <button
             type="button"
-            @click="closeModal"
+            @click="handleClose"
             class="bg-[#F95668] hover:bg-[#F95668]/80 text-white px-4 py-2 rounded-lg font-medium shadow hover:shadow-md transform hover:-translate-y-0.5 transition-all duration-200 flex items-center"
           >
             ยกเลิก
@@ -264,7 +264,7 @@ const statusOptions = [
 //   { id: 1, value: true, name: "เผยแพร่" },
 //   { id: 0, value: false, name: "ไม่เผยแพร่" },
 // ];
-const emit = defineEmits(["close","saved"]);
+const emit = defineEmits(["close", "saved"]);
 const selectedStatus = ref(statusOptions[0]);
 // const selectedIspublic = ref(ispublicOptions[0]);
 /* =========================
@@ -325,7 +325,6 @@ function normalizeProvinceForSubmit() {
     return v;
   }
 }
-
 
 // main form (ใช้ตัวเดียวทั้งหน้า)
 const form = reactive({
@@ -406,14 +405,25 @@ watch(
   }
 );
 
-watch(() => form.selectedCollege, () => { errors.institute_group = ""; });
+function handleClose() {
+  if (isLoading.value) return;
+  clearForm(); // เคลียร์ค่าก่อนทุกครั้ง
+  emit("close"); // ให้พาเรนต์ปิด v-if
+  props.closeModal?.(); // เผื่อพาเรนต์ส่งฟังก์ชันมา
+}
+
+watch(
+  () => form.selectedCollege,
+  () => {
+    errors.institute_group = "";
+  }
+);
+
+// ถ้าพาเรนต์ปิด (showModal=false) ให้ล้างฟอร์มด้วย
 watch(
   () => props.showModal,
   (open) => {
-    if (open) {
-      clearForm();
-      fetchCollegesDebounced();
-    }
+    if (!open) clearForm();
   }
 );
 
@@ -479,15 +489,61 @@ const fetchColleges = async () => {
       (Array.isArray(payload) && payload) ||
       [];
 
-    colleges.value = rows.map((r) => ({
-      id: r.institute_group ?? r.code ?? String(r.name ?? ""),
-      name: r.campus ? `${r.name} (${r.campus})` : r.name ?? "",
-    }));
+    // แสดงเฉพาะที่ active
+    const activeRows = rows.filter((r) => Number(r?.active ?? 0) === 1);
+
+    // map เป็น options ที่ v-select ใช้ได้ทันที
+    const mapped = activeRows.map((r) => {
+      const name = r?.campus ? `${r?.name ?? ""} (${r.campus})` : r?.name ?? "";
+      return {
+        id: String(r?.id ?? r?.code ?? r?.name ?? "").trim(),
+        name,
+        // เก็บ group สำหรับใช้ตอนบันทึก
+        institute_group: String(r?.institute_group ?? r?.id ?? "").trim(),
+      };
+    });
+
+    // (ออปชัน) จัดเรียง: group เดียวกันอยู่ติดกัน และให้ parent (id === institute_group) ขึ้นก่อน
+    // ช่วยแปลงเป็นตัวเลข (ถ้าเป็นได้) เพื่อใช้เรียงตัวเลข
+    // แปลงเป็นตัวเลขถ้าเป็นไปได้
+    const toNum = (s) => {
+      const n = Number(s);
+      return Number.isFinite(n) ? n : null;
+    };
+
+    // เปรียบเทียบ key แบบ "เลขก่อน ถ้าไม่ใช่เลขให้เทียบสตริง"
+    const cmpByKey = (a, b, key) => {
+      const ax = toNum(a[key]);
+      const bx = toNum(b[key]);
+      if (ax !== null && bx !== null) return ax - bx;
+      return String(a[key]).localeCompare(String(b[key]), "th", {
+        numeric: true,
+        sensitivity: "base",
+      });
+    };
+
+    // ====== แบบ A: เรียง institute_group -> id (ไม่บังคับ parent ก่อน) ======
+    mapped.sort((a, b) => {
+      const g = cmpByKey(a, b, "institute_group");
+      if (g !== 0) return g;
+
+      const i = cmpByKey(a, b, "id"); // tie-breaker ด้วย id
+      if (i !== 0) return i;
+
+      // เผื่อชนกันจริง ๆ ค่อยดูชื่อ
+      return String(a.name).localeCompare(String(b.name), "th", {
+        numeric: true,
+        sensitivity: "base",
+      });
+    });
+
+    colleges.value = mapped;
   } catch (e) {
     console.error("fetchColleges failed:", e);
     colleges.value = [];
   }
 };
+
 const fetchCollegesDebounced = debounce(fetchColleges, 300);
 
 function clearForm() {
@@ -497,7 +553,8 @@ function clearForm() {
   form.selectedProvince = null;
   form.province = "";
   form.selectedCollege = null;
-  form.selectedStatus = statusOptions[0];
+  // form.selectedStatus = statusOptions[0];
+  selectedStatus.value = statusOptions[0];
   // form.selectedIspublic = ispublicOptions[0];
   form.active = 1;
   form.college_id = null;
@@ -553,18 +610,19 @@ async function saveCollege() {
     return;
   }
 
-  const instituteGroup = form.selectedCollege == null
-  ? ""
-  : String(form.selectedCollege).trim();
-  // ---- payload (ไทย → province id, ต่างประเทศ → province_name) ----
+  const instituteGroup = form.selectedCollege
+    ? String(form.selectedCollege.institute_group || "").trim()
+    : "";
+
   const payload = {
     name: nameTrimmed,
     campus: form.campus ?? "",
     country: String(form.selectedCountry),
-    institute_group: instituteGroup,          // ✅ string, not empty, ≤255
-    province: provinceValue,                   // ✅ แก้ไปก่อนหน้าแล้ว
+    province: provinceValue,
+    institute_group: instituteGroup,
     active: Number(form.selectedStatus?.id ?? form.active ?? 1) === 1 ? 1 : 0,
   };
+
   // ลบคีย์ undefined (กัน payload สกปรก)
   Object.keys(payload).forEach(
     (k) => payload[k] === undefined && delete payload[k]
@@ -574,12 +632,13 @@ async function saveCollege() {
   isLoading.value = true;
   try {
     const res = await addEducationCollege(payload);
-   // เดาทางหลายรูปแบบของ API เพื่อให้หยิบ id ได้เสมอ
-   const newId =
-     res?.data?.data?.id ??
-     res?.data?.item?.id ??
-     res?.data?.id ??
-     res?.id ?? null;
+    // เดาทางหลายรูปแบบของ API เพื่อให้หยิบ id ได้เสมอ
+    const newId =
+      res?.data?.data?.id ??
+      res?.data?.item?.id ??
+      res?.data?.id ??
+      res?.id ??
+      null;
     await Swal.fire({
       icon: "success",
       title: "บันทึกข้อมูลสำเร็จ!",
@@ -588,9 +647,9 @@ async function saveCollege() {
       timerProgressBar: true,
     });
     clearForm();
-  // ส่ง id กลับให้พาเรนต์ แล้วปิด modal
-  emit("saved", { id: newId, ...payload });
-  props.closeModal?.();
+    // ส่ง id กลับให้พาเรนต์ แล้วปิด modal
+    emit("saved", { id: newId, ...payload });
+    handleClose();
   } catch (error) {
     console.error(error);
     await Swal.fire({
@@ -603,10 +662,6 @@ async function saveCollege() {
   }
 }
 
-function closeModal() {
-  if (isLoading.value) return; // กันปิดตอนกำลังโหลด
-  props.closeModal?.();
-}
 </script>
 
 

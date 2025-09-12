@@ -16,7 +16,7 @@
     <div
       class="overflow-y-auto md:overflow-y-hidden border border-gray-300 rounded-lg"
     >
-      <table class="w-full border-collapse sm:text-base">
+      <table class="w-full border-collapse sm:text-base table-fixed">
         <thead>
           <tr class="bg-[#E2EDFC]">
             <th
@@ -65,12 +65,12 @@
               รายละเอียด
             </th>
             <th
-              class="border px-2 py-[0.7rem] whitespace-nowrap w-[30px] font-bold"
+              class="border px-2 py-[0.7rem] whitespace-nowrap w-[100px] font-bold"
             >
               สถานะ
             </th>
             <th
-              class="border px-2 py-[0.7rem] whitespace-nowrap w-[30px] font-bold"
+              class="border px-2 py-[0.7rem] whitespace-nowrap w-[100px] font-bold"
             >
               จัดการ
             </th>
@@ -154,7 +154,7 @@
             </td>
 
             <!-- หมายเหตุ -->
-            <td class="border px-2 py-1">{{ item.remark || "" }}</td>
+            <td class="border px-2 py-1 break-words">{{ item.remark || "" }}</td>
 
             <!-- สถานะ -->
             <td class="border px-2 py-1 text-center">
