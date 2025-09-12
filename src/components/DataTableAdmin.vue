@@ -83,7 +83,9 @@
             :key="item.id"
             :class="[
               'hover:bg-gray-50',
-              item.college.active === 0 || item.active === 0 ? 'bg-gray-100 text-gray-400' : '',
+              item.college.active === 0 || item.active === 0
+                ? 'bg-gray-100 text-gray-400'
+                : '',
             ]"
           >
             <!-- ลำดับ -->
@@ -257,14 +259,14 @@
     </div>
   </div>
 
- <EditCurriculumModal
-   v-if="showEditModal"
-   :key="selectedCurriculum?.id ?? 'new'" 
-   :showModal="showEditModal"
-   :curriculum="selectedCurriculum"
-   :closeModal="closeEditModal"
-   @refresh-data="handleEditSaved"
-/>
+  <EditCurriculumModal
+    v-if="showEditModal"
+    :key="selectedCurriculum?.id ?? 'new'"
+    :showModal="showEditModal"
+    :curriculum="selectedCurriculum"
+    :closeModal="closeEditModal"
+    @refresh-data="handleEditSaved"
+  />
 
   <!-- Modal รายละเอียด -->
   <DetailCurriculumModal
@@ -276,7 +278,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from "vue"; // ✅ เพิ่ม onMounted
+import { ref, onMounted, nextTick, computed } from "vue"; // ✅ เพิ่ม onMounted
 import EditCurriculumModal from "./EditCurriculumModal.vue";
 import DetailCurriculumModal from "./DetailCurriculumModal.vue"; // ✅ ถ้าใช้โมดัลรายละเอียด
 import { getTypes } from "@/services/apiService";
@@ -317,7 +319,8 @@ async function handleEditSaved(e) {
   showEditModal.value = false;
 
   // หา id ที่เชื่อถือได้
-  const id = e?.id ?? selectedCurriculum.value?.id ?? detailCurriculum.value?.id ?? null;
+  const id =
+    e?.id ?? selectedCurriculum.value?.id ?? detailCurriculum.value?.id ?? null;
 
   // รวม payload ล่าสุดกลับเข้า detailCurriculum
   detailCurriculum.value = {
@@ -349,9 +352,8 @@ function closeDetailModal() {
 
 // ---------------------- ประเภทสมาชิก (mapping) ----------------------
 const TYPE_ALL_NAME = "สมาชิกทุกประเภท";
-const typeLookup = ref({}); // { id: name }
-const typeAllId = ref(null); // id ของ "สมาชิกทุกประเภท"
-
+const ALL_SET = new Set([1, 2, 3]);
+const typeLookup = ref({});
 async function loadTypeLookup() {
   try {
     const res = await getTypes();
@@ -360,13 +362,30 @@ async function loadTypeLookup() {
     typeLookup.value = Object.fromEntries(
       active.map((t) => [Number(t.id), String(t.type_name)])
     );
-    typeAllId.value =
-      active.find((t) => t.type_name === TYPE_ALL_NAME)?.id ?? 1;
   } catch (e) {
     console.error("getTypes error:", e);
   }
 }
-onMounted(loadTypeLookup); // ✅ เรียกหลัง import แล้ว
+onMounted(async () => {
+  await loadTypeLookup();
+  console.log("typeLookup:", typeLookup.value); // {1: 'สมาชิกสามัญ', 2: 'สมาชิกวิสามัญ', 3: 'สมาชิกสมทบ', ...}
+});
+// ✅ เรียกหลัง import แล้ว
+const typeNameToId = computed(() => {
+  const m = new Map();
+  for (const [id, name] of Object.entries(typeLookup.value)) {
+    if (name) m.set(String(name).trim(), Number(id));
+  }
+  return m;
+});
+
+// id ของประเภท "จริง" ทั้งหมด (ยกเว้น "สมาชิกทุกประเภท")
+const realTypeIds = computed(() =>
+  Object.entries(typeLookup.value)
+    .filter(([, name]) => String(name).trim() !== TYPE_ALL_NAME)
+    .map(([id]) => Number(id))
+    .filter(Number.isFinite)
+);
 
 function normalizeIds(val) {
   if (Array.isArray(val))
@@ -381,32 +400,75 @@ function normalizeIds(val) {
 }
 
 function renderTypes(item) {
-  // 1) ถ้ามาเป็น objects [{id,name}]
-  if (Array.isArray(item.types) && item.types.length) {
-    const names = item.types
-      .map((t) => t?.name || typeLookup.value[Number(t?.id)])
-      .filter(Boolean);
-    if (!names.length) return "";
-    if (names.includes(TYPE_ALL_NAME)) return TYPE_ALL_NAME;
-    return [...new Set(names)].join(", ");
-  }
-  // 2) ถ้ามี ids (type_ids) หรือ field type
-  let ids = [];
-  if (Array.isArray(item.type_ids) && item.type_ids.length) {
-    ids = normalizeIds(item.type_ids);
-  } else if (item.type != null) {
-    ids = normalizeIds(item.type);
-    if (!ids.length && typeof item.type === "string") {
-      // เผื่อ API ส่งเป็นชื่ออยู่แล้ว
-      if (item.type.includes("สมาชิก")) return item.type;
+  // 1) ดึง raw จากหลายฟิลด์ที่เป็นไปได้ (ตามโครงสร้างระบบคุณ)
+  const raw =
+    (Array.isArray(item?.types) && item.types.length && item.types) ||
+    (Array.isArray(item?.type_ids) && item.type_ids.length && item.type_ids) ||
+    (Array.isArray(item?.type) && item.type.length && item.type) ||
+    item?.type ||
+    null;
+
+  // 2) แปลงให้กลายเป็น array ของตัวเลข ids
+  const toIds = (v) => {
+    const out = [];
+    const pushId = (x) => {
+      const n = Number(x);
+      if (Number.isFinite(n)) out.push(n);
+    };
+    if (Array.isArray(v)) {
+      for (const it of v) {
+        if (it && typeof it === "object" && it.id != null) pushId(it.id);
+        else if (typeof it === "number") pushId(it);
+        else if (typeof it === "string") {
+          // สตริงเลขเดี่ยว
+          if (/^-?\d+(\.\d+)?$/.test(it.trim())) pushId(it.trim());
+          else {
+            // กรณีเป็นชื่อ (เช่น “สมาชิกวิสามัญ”) ปล่อยผ่านไว้ เพราะกรณีนี้ของคุณส่งมาเป็นตัวเลขอยู่แล้ว
+          }
+        }
+      }
+      return out;
     }
+    if (typeof v === "string") {
+      // ✅ เคสหลักของคุณ: "1,2,3" / "2,3"
+      return v
+        .split(/[,\uFF0C\u3001\s]+/)
+        .map((s) => Number(s.trim()))
+        .filter(Number.isFinite);
+    }
+    if (typeof v === "number") return [v];
+    return out;
+  };
+
+  let ids = toIds(raw);
+
+  // 3) dedupe รักษาลำดับ
+  const seen = new Set();
+  ids = ids.filter((n) => (seen.has(n) ? false : (seen.add(n), true)));
+
+  // 4) ถ้าเป็นชุดครบทุกประเภท {1,2,3} → แสดง "สมาชิกทุกประเภท"
+  if (
+    ids.length &&
+    ALL_SET.size === ids.length &&
+    [...ALL_SET].every((id) => ids.includes(id))
+  ) {
+    return TYPE_ALL_NAME;
   }
-  if (!ids.length) return "";
-  const allId = Number(typeAllId.value ?? 1);
-  if (ids.includes(allId)) return TYPE_ALL_NAME;
-  return ids
-    .map((id) => typeLookup.value[id])
-    .filter(Boolean)
-    .join(", ");
+
+  // 5) map id -> name จาก lookup (โหลดจาก getTypes)
+  const nameById = typeLookup.value || {};
+  const names = ids
+    .map((id) => nameById[id])
+    .filter((s) => typeof s === "string" && s.trim().length);
+
+  // 6) ถ้า lookup ยังไม่มา (หรือบาง id ยังหาชื่อไม่เจอ) ให้ fallback เป็น id
+  if (names.length === 0) {
+    // ถ้า raw เดิมเป็น string (เช่น "2,3") ให้แสดงมันก่อนเป็น fallback
+    if (typeof raw === "string" && raw.trim()) return raw.trim();
+    // ไม่งั้นก็แสดงเป็น id คั่น comma
+    return ids.join(", ");
+  }
+
+  return names.join(", ");
 }
 </script>

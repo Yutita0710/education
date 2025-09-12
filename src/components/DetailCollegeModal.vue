@@ -80,12 +80,14 @@
       </div>
 
       <!-- Content -->
-      <div v-else>
-        <!-- ชื่อ -->
-        <div class="mb-4 flex flex-row gap-4">
-          <div>
-            <label class="block text-gray-700 mb-2">
-              <span class="flex items-center gap-1 font-bold">ชื่อสถาบัน</span>
+      <div v-else class="px-14 space-y-4">
+        <!-- ชื่อสถาบัน -->
+        <div class="grid grid-cols-[210px_1fr] gap-6">
+          <div class="md:text-left">
+            <label class="block text-gray-700">
+              <span class="inline-flex items-center gap-1 font-bold"
+                >ชื่อสถาบัน</span
+              >
             </label>
           </div>
           <div>
@@ -96,10 +98,12 @@
         </div>
 
         <!-- วิทยาเขต -->
-        <div class="mb-4 flex flex-row gap-4">
-          <div>
-            <label class="block text-gray-700 mb-2">
-              <span class="flex items-center gap-1 font-bold">วิทยาเขต</span>
+        <div class="grid grid-cols-[210px_1fr] gap-6">
+          <div class="md:text-left">
+            <label class="block text-gray-700">
+              <span class="inline-flex items-center gap-1 font-bold"
+                >วิทยาเขต</span
+              >
             </label>
           </div>
           <div>
@@ -110,7 +114,7 @@
         </div>
 
         <!-- กลุ่มสถาบัน (ตาราง) -->
-        <div class="mb-6 flex flex-col gap-4">
+        <div class="mb-6 flex flex-col gap-4" v-if="!sameGroupAsSelf">
           <div>
             <label class="block text-gray-700 mb-2">
               <span class="flex items-center gap-1 font-bold">กลุ่มสถาบัน</span>
@@ -146,7 +150,6 @@
                       - ไม่พบกลุ่มสถาบัน -
                     </td>
                   </tr>
-
                   <tr
                     v-for="(g, idx) in groupColleges"
                     :key="g.id || idx"
@@ -169,12 +172,26 @@
             </div>
           </div>
         </div>
-
-        <!-- ประเทศ -->
-        <div class="mb-4 flex flex-row gap-4">
+        <!-- <div v-else  class="grid grid-cols-[210px_1fr] gap-6">
+          <div class="md:text-left">
+            <label class="block text-gray-700">
+              <span class="inline-flex items-center gap-1 font-bold"
+                >กลุ่มสถาบัน</span
+              >
+            </label>
+          </div>
           <div>
-            <label class="block text-gray-700 mb-2">
-              <span class="flex items-center gap-1 font-bold">ประเทศ</span>
+            <span class="text-gray-500 text-sm" >สถาบันนี้เป็นหัวกลุ่มของตนเอง จึงไม่แสดงรายการกลุ่มสถาบัน</span >
+          </div>
+        </div>
+         -->
+        <!-- ประเทศ -->
+        <div class="grid grid-cols-[210px_1fr] gap-6">
+          <div class="md:text-left">
+            <label class="block text-gray-700">
+              <span class="inline-flex items-center gap-1 font-bold"
+                >ประเทศ</span
+              >
             </label>
           </div>
           <div>
@@ -183,10 +200,12 @@
         </div>
 
         <!-- จังหวัด -->
-        <div class="mb-4 flex flex-row gap-4">
-          <div>
-            <label class="block text-gray-700 mb-2">
-              <span class="flex items-center gap-1 font-bold">จังหวัด</span>
+        <div class="grid grid-cols-[210px_1fr] gap-6">
+          <div class="md:text-left">
+            <label class="block text-gray-700">
+              <span class="inline-flex items-center gap-1 font-bold"
+                >จังหวัด</span
+              >
             </label>
           </div>
           <div>
@@ -195,17 +214,17 @@
         </div>
 
         <!-- จำนวนหลักสูตร -->
-        <div class="mb-4 flex flex-row gap-4">
-          <div>
-            <label class="block text-gray-700 mb-2">
-              <span class="flex items-center gap-1 font-bold"
+        <div class="grid grid-cols-[210px_1fr] gap-6">
+          <div class="md:text-left">
+            <label class="block text-gray-700">
+              <span class="inline-flex items-center gap-1 font-bold"
                 >จำนวนหลักสูตร</span
               >
             </label>
           </div>
           <div>
             <span
-              class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full"
+              class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full"
             >
               {{ detail.curriculumCount }} หลักสูตร
             </span>
@@ -213,17 +232,17 @@
         </div>
 
         <!-- สถานะการใช้งาน -->
-        <div class="mb-4 flex flex-row gap-4">
-          <div>
-            <label class="block text-gray-700 mb-2">
-              <span class="flex items-center gap-1 font-bold"
+        <div class="grid grid-cols-[210px_1fr] gap-6">
+          <div class="md:text-left">
+            <label class="block text-gray-700">
+              <span class="inline-flex items-center gap-1 font-bold"
                 >สถานะการใช้งาน</span
               >
             </label>
           </div>
           <div>
             <span
-              class="text-xs font-medium me-2 px-2.5 py-0.5 rounded-full"
+              class="text-xs font-medium px-2.5 py-0.5 rounded-full"
               :class="
                 Number(detail.active) === 1
                   ? 'bg-green-100 text-green-800'
@@ -315,31 +334,6 @@ function closeEditModal() {
   selectedCollege.value = null;
 }
 
-// เดิมชื่อ handleRefreshData (มาจาก modal เก่า) → เปลี่ยนเป็น handleSaved
-function handleSaved(updated) {
-  // อัปเดต state ปัจจุบันให้ตรงกับค่าที่เซฟ (หรือจะเรียก fetchDetail() ก็ได้)
-  Object.assign(detail, {
-    name: updated.name ?? detail.name,
-    campus: updated.campus ?? detail.campus,
-    country: updated.country ?? detail.country,
-    province: updated.province ?? detail.province,
-    active:
-      typeof updated.active !== "undefined"
-        ? Number(updated.active)
-        : detail.active,
-    institute_group: updated.institute_group ?? detail.institute_group,
-  });
-
-  // ปิด modal
-  showEditModal.value = false;
-  selectedCollege.value = null;
-
-  // ถ้าต้องให้พาเรนต์รีเฟรชรายการจากเซิร์ฟเวอร์
-  emit("refresh-data", updated);
-
-  // หรือจะดึงใหม่ตรงนี้เลยก็ได้:
-  // fetchDetail();
-}
 /** ========== Masters ========== */
 const countryOptions = ref([]);
 const provinceOptions = ref([]);
@@ -396,7 +390,12 @@ const provinceDisplay = computed(() => {
   }
   return "-";
 });
-
+const sameGroupAsSelf = computed(() => {
+  const id = detail?.id != null ? String(detail.id) : "";
+  const gid =
+    detail?.institute_group != null ? String(detail.institute_group) : "";
+  return gid !== "" && id !== "" && gid === id;
+});
 /** ========== Fetchers ========== */
 async function fetchMasterOptions() {
   try {

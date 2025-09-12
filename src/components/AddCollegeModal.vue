@@ -480,7 +480,7 @@ const fetchColleges = async () => {
       [];
 
     colleges.value = rows.map((r) => ({
-      id: r.id ?? r.code ?? String(r.name ?? ""),
+      id: r.institute_group ?? r.code ?? String(r.name ?? ""),
       name: r.campus ? `${r.name} (${r.campus})` : r.name ?? "",
     }));
   } catch (e) {

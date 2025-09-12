@@ -454,22 +454,22 @@
     </div>
   </div>
   <DetailCurriculumModal
-  :key="detailCurriculum?.id ?? (showDetailModal ? 'open' : 'closed')"
-  :showModal="showDetailModal"
-  :curriculum="detailCurriculum"
-  :closeModal="closeDetailModal"
-  @request-edit="openEditFromDetail"
-  @refresh-data="emit('refresh-data', $event)"
-/>
+    :key="detailCurriculum?.id ?? (showDetailModal ? 'open' : 'closed')"
+    :showModal="showDetailModal"
+    :curriculum="detailCurriculum"
+    :closeModal="closeDetailModal"
+    @request-edit="openEditFromDetail"
+    @refresh-data="emit('refresh-data', $event)"
+  />
 
   <EditCurriculumModal
-   v-if="showEditModal"
-   :key="editingCurriculum?.id ?? 'new'"
-   :showModal="showEditModal"
-   :curriculum="editingCurriculum"
-   :closeModal="closeEditModal"
-   @refresh-data="handleEditSaved"
- />
+    v-if="showEditModal"
+    :key="editingCurriculum?.id ?? 'new'"
+    :showModal="showEditModal"
+    :curriculum="editingCurriculum"
+    :closeModal="closeEditModal"
+    @refresh-data="handleEditSaved"
+  />
 </template>
 
 <script setup>
@@ -889,6 +889,59 @@ function decorateCurriculumForView(raw) {
     }));
   }
 
+  const realIds = (typeOptions.value || [])
+    .map((t) => Number(t.id))
+    .filter((id) => Number.isFinite(id) && id !== ALL_ID);
+
+  // helper
+  const arrFromCsvOrArray = (v) => {
+    if (Array.isArray(v)) return v.map(Number).filter(Number.isFinite);
+    if (typeof v === "string") {
+      return v
+        .split(/[,\uFF0C\u3001\s]+/)
+        .map((s) => Number(s.trim()))
+        .filter(Number.isFinite);
+    }
+    return [];
+  };
+
+  // 1) รวมแหล่งที่มาของ type ids
+  let ids = [];
+  if (out.type_ids) ids = arrFromCsvOrArray(out.type_ids);
+  else if (out.type) ids = arrFromCsvOrArray(out.type);
+
+  // 2) ถ้า backend ส่ง names มาแล้ว (out.types) แต่ไม่มี ids → พยายาม map กลับเป็น id
+  if ((!ids || !ids.length) && Array.isArray(out.types) && out.types.length) {
+    const nameToId = new Map(
+      (typeOptions.value || []).map((t) => [
+        String(t.name).trim(),
+        Number(t.id),
+      ])
+    );
+    ids = out.types
+      .map((t) => nameToId.get(String(t.name).trim()))
+      .filter(Number.isFinite);
+  }
+
+  const idSet = new Set(ids);
+  const allSelected =
+    realIds.length > 0 && realIds.every((id) => idSet.has(id));
+
+  if (allSelected) {
+    // ✅ แสดงผลเป็น "สมาชิกทุกประเภท" เพียงตัวเดียว
+    out.type_ids = [ALL_ID, ...realIds]; // เก็บไว้เผื่อใช้ต่อ
+    out.types = [{ id: ALL_ID, name: ALL_LABEL }];
+    out.type_display = ALL_LABEL;
+  } else {
+    // แสดงตามที่เลือกจริง
+    const mapIdToName = (id) =>
+      (typeOptions.value || []).find((t) => Number(t.id) === Number(id))
+        ?.name || String(id);
+
+    out.type_ids = ids;
+    out.types = ids.map((id) => ({ id, name: mapIdToName(id) }));
+    out.type_display = out.types.map((t) => t.name).join(", ");
+  }
   return out;
 }
 
@@ -1031,7 +1084,7 @@ async function saveCurriculum() {
 
     const meetingDateStr = dayjs(meetingDate.value).format("YYYY-MM-DD");
     const today = dayjs();
-    if (dayjs(meetingDate.value).isAfter(today, 'day')) {
+    if (dayjs(meetingDate.value).isAfter(today, "day")) {
       await Swal.fire({
         icon: "warning",
         title: "วันที่ประชุมต้องไม่เกินวันที่ปัจจุบัน",

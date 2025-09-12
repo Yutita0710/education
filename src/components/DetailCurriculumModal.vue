@@ -16,7 +16,7 @@
         <div class="justify-self-end flex items-center gap-2">
           <!-- ปุ่มดินสอ -->
           <button
-           @click.stop="onEditClick"
+            @click.stop="onEditClick"
             :aria-describedby="detail?.id ? `tt-edit-${detail.id}` : 'tt-edit'"
             type="button"
             class="inline-flex items-center bg-[#F8B15D] text-white w-20 h-10 rounded-full hover:bg-orange-500 transition justify-center"
@@ -168,10 +168,11 @@
 </template>
 
 <script setup>
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
 import EditCurriculumModal from "./EditCurriculumModal.vue";
+import { getTypes } from "@/services/apiService";
 dayjs.locale("th");
 
 const props = defineProps({
@@ -186,7 +187,7 @@ let fetchToken = 0;
 // ย่อ reference
 const detail = computed(() => props.curriculum ?? {});
 function onEditClick() {
-  emit('request-edit', { ...(detail.value || {}) });
+  emit("request-edit", { ...(detail.value || {}) });
 }
 // helper: วันที่ไทย
 function toThai(dateStr) {
@@ -210,49 +211,87 @@ const description = computed(() => detail.value?.description || "-");
 const degreeName = computed(() => detail.value?.degree?.name ?? "-");
 
 // ---------- แก้ตรงนี้ ----------
-const TYPE_NAME_BY_ID = {
-  1: "สมาชิกทุกประเภท",
-  2: "สมาชิกสามัญ",
-  3: "สมาชิกวิสามัญ",
-  4: "สมาชิกสมทบ",
-};
+const typesMaster = ref([]);
+const typeIdToName = computed(() => {
+  const m = new Map();
+  for (const t of typesMaster.value) {
+    const id = Number(t?.id);
+    const name = String(t?.type_name ?? t?.name ?? "").trim();
+    if (Number.isFinite(id) && name) m.set(id, name);
+  }
+  return m;
+});
+
+async function loadTypesMasterOnce() {
+  if (typesMaster.value.length) return;
+  try {
+    const res = await getTypes();
+    typesMaster.value = (res?.data?.data ?? []).filter(
+      (t) => Number(t?.active ?? 1) === 1
+    );
+  } catch (e) {
+    console.warn("loadTypesMasterOnce error:", e);
+    typesMaster.value = [];
+  }
+}
+
+// โหลดเมื่อโมดัลเปิด (และโหลดครั้งเดียว)
+watch(
+  () => props.showModal,
+  async (open) => {
+    if (open) await loadTypesMasterOnce();
+  },
+  { immediate: true }
+);
 
 const typeNames = computed(() => {
   const v = detail.value ?? {};
 
-  // 1) มีชื่อมาแล้วเป็นออบเจ็กต์ (รองรับทั้ง v.types และ v.type)
-  const objArray =
+  // รวบรวมเป็นเลข id[]
+  let ids = [];
+
+  // 1) array ของ object (เช่น v.types = [{id,name}, ...])
+  const objArr =
     (Array.isArray(v.types) && v.types.length ? v.types : null) ??
     (Array.isArray(v.type) && typeof v.type[0] === "object" ? v.type : null);
 
-  if (objArray) {
-    const names = objArray.map((t) => t?.name).filter(Boolean);
-    if (names.includes("สมาชิกทุกประเภท")) return "สมาชิกทุกประเภท";
-    return names.join(", ") || "-";
+  if (objArr) {
+    ids = objArr.map((o) => Number(o?.id)).filter(Number.isFinite);
+    // ถ้าบางตัวไม่มี id แต่มี name → เดาจาก master
+    for (const o of objArr) {
+      if (o?.id == null && o?.name) {
+        const guess = [...typeIdToName.value.entries()].find(
+          ([, n]) => n === String(o.name).trim()
+        )?.[0];
+        if (Number.isFinite(guess)) ids.push(guess);
+      }
+    }
   }
 
-  // 2) มีเป็น id: รองรับ array ของ id, สตริงคอมมา, หรือเลขเดี่ยว
-  let ids = [];
-  if (Array.isArray(v.type_ids)) {
-    ids = v.type_ids;
-  } else if (Array.isArray(v.type)) {
-    ids = v.type;
-  } else if (typeof v.type === "string") {
-    ids = v.type.split(",").map((s) => Number(s.trim()));
-  } else if (typeof v.type === "number") {
-    ids = [v.type];
-  }
+  // 2) กรณีอื่น
+  if (!ids.length && Array.isArray(v.type_ids)) ids = v.type_ids;
+  else if (!ids.length && Array.isArray(v.type)) ids = v.type;
+  else if (!ids.length && typeof v.type === "string")
+    ids = v.type.split(/[,\uFF0C\u3001\s]+/);
+  else if (!ids.length && typeof v.type === "number") ids = [v.type];
 
-  ids = Array.from(
-    new Set(ids.map((n) => Number(n)).filter((n) => Number.isFinite(n)))
-  );
-  if (!ids.length) return "-";
+  const idSet = new Set(ids.map((n) => Number(n)).filter(Number.isFinite));
+  if (idSet.size === 0) return "-";
 
-  if (ids.includes(1)) return "สมาชิกทุกประเภท";
+  // ✅ ALL เฉพาะมีครบ {1,2,3}
+  const ALL_SET = new Set([1, 2, 3]);
+  const isAll =
+    idSet.size === ALL_SET.size && [...ALL_SET].every((id) => idSet.has(id));
+  if (isAll) return "สมาชิกทุกประเภท";
 
-  const names = ids.map((id) => TYPE_NAME_BY_ID[id]).filter(Boolean);
+  // แปลงชื่อจาก API
+  const names = [...idSet]
+    .map((id) => typeIdToName.value.get(id) ?? String(id))
+    .filter((s) => s && s.trim().length);
+
   return names.length ? names.join(", ") : "-";
 });
+
 // ---------- จบการแก้ ----------
 
 // มติ/วันที่/ปี
@@ -267,7 +306,6 @@ const endYear = computed(() => detail.value?.end_year ?? "-");
 function handleClose() {
   props.closeModal?.();
 }
-
 
 // ---------------------- Edit modal ----------------------
 const showEditModal = ref(false);
@@ -285,6 +323,5 @@ async function handleRefreshData(e) {
   // ส่งผลลัพธ์ขึ้นพาเรนต์ให้รวม/เปิดโมดัลตาม flow ของพาเรนต์
   emit("refresh-data", e);
 }
-
 </script>
 
