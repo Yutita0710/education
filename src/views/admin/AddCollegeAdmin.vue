@@ -3,6 +3,7 @@
     <div class="w-auto">
       <SearchCollegeAdmin @update:filters="onFiltersUpdate" />
     </div>
+
     <!-- ตาราง -->
     <div class="mb-8 sm:px-8 md:px-4 lg:px-4 xl:px-20">
       <div
@@ -15,7 +16,7 @@
         </p>
 
         <button
-          @click="showCollegeModal = true"
+          @click="openAddCollegeModal"
           class="inline-flex items-center gap-2 bg-[#0085DB] hover:bg-[#0072B1] text-white px-4 py-2 rounded-full shadow"
         >
           <svg
@@ -55,7 +56,6 @@
               <th class="border px-2 py-[0.7rem] font-bold w-[100px]">
                 วิทยาเขต
               </th>
-
               <th
                 class="border px-2 py-[0.7rem] font-bold whitespace-nowrap w-[100px]"
               >
@@ -69,7 +69,6 @@
               >
                 จำนวนหลักสูตร
               </th>
-
               <th
                 class="border px-2 py-[0.7rem] font-bold whitespace-nowrap w-[50px]"
               >
@@ -82,6 +81,7 @@
               </th>
             </tr>
           </thead>
+
           <tbody v-if="Array.isArray(colleges) && colleges.length > 0">
             <tr
               v-for="item in colleges"
@@ -110,22 +110,20 @@
                 class="border px-2 py-1 text-center items-center justify-center"
               >
                 <span
-                  :class="
-                    item.active
-                      ? 'bg-[#09C97F1A] text-[#09C97F]'
-                      : 'bg-[#FB977D1A] text-[#FB977D]'
-                  "
+                  :class="item.active ? 'bg-[#09C97F1A] text-[#09C97F]' : 'bg-[#FB977D1A] text-[#FB977D]'"
+
                   class="rounded-full px-3 py-1 text-xs readonly font-medium"
                 >
                   {{ item.active === 1 ? "ใช้งาน" : "ไม่ใช้งาน" }}
                 </span>
               </td>
+
               <td class="border px-2 py-1">
                 <div class="flex flex-row gap-2 items-center justify-center">
                   <!-- View Detail -->
                   <div class="relative inline-block group">
                     <button
-                      @click.stop="openDetailCollegeModal(item)"
+                      @click.stop="openDetailOnly(item)"
                       :aria-describedby="`tt-view-${item.id}`"
                       class="inline-flex items-center bg-[#0085DB] text-white w-10 h-10 rounded-full hover:bg-blue-500 transition justify-center"
                       type="button"
@@ -136,32 +134,23 @@
                         xmlns="http://www.w3.org/2000/svg"
                         class="size-7"
                       >
-                        <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                        <g
-                          id="SVGRepo_tracerCarrier"
+                        <path
+                          d="M4.5 12.5C7.5 6 16.5 6 19.5 12.5"
+                          stroke="#ffff"
+                          stroke-width="1.5"
                           stroke-linecap="round"
                           stroke-linejoin="round"
-                        ></g>
-                        <g id="SVGRepo_iconCarrier">
-                          <path
-                            d="M4.5 12.5C7.5 6 16.5 6 19.5 12.5"
-                            stroke="#ffff"
-                            stroke-width="1.5"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                          ></path>
-                          <path
-                            d="M12 16C10.8954 16 10 15.1046 10 14C10 12.8954 10.8954 12 12 12C13.1046 12 14 12.8954 14 14C14 15.1046 13.1046 16 12 16Z"
-                            stroke="#ffff"
-                            stroke-width="1.5"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                          ></path>
-                        </g>
+                        />
+                        <path
+                          d="M12 16C10.8954 16 10 15.1046 10 14C10 12.8954 10.8954 12 12 12C13.1046 12 14 12.8954 14 14C14 15.1046 13.1046 16 12 16Z"
+                          stroke="#ffff"
+                          stroke-width="1.5"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
                       </svg>
                     </button>
 
-                    <!-- tooltip -->
                     <div
                       :id="`tt-view-${item.id}`"
                       role="tooltip"
@@ -175,11 +164,9 @@
                   </div>
 
                   <!-- Edit -->
-
-                  <!-- Edit -->
                   <div class="relative inline-block group">
                     <button
-                      @click.stop="openEditcollegeModal(item)"
+                      @click.stop="openEditFromList(item)"
                       :aria-describedby="`tt-edit-${item.id}`"
                       class="inline-flex items-center bg-[#F8B15D] text-white w-10 h-10 rounded-full hover:bg-orange-500 transition justify-center"
                       type="button"
@@ -200,7 +187,6 @@
                       </svg>
                     </button>
 
-                    <!-- tooltip -->
                     <div
                       :id="`tt-edit-${item.id}`"
                       role="tooltip"
@@ -218,6 +204,7 @@
           </tbody>
         </table>
       </div>
+
       <PaginationBar
         :current-page="state.page"
         v-model:perPage="state.limit"
@@ -232,11 +219,13 @@
     <!-- Add Modal -->
     <AddCollegeModal
       :showModal="showCollegeModal"
+      :closeModal="closeCollegeModal"
+      :options-key="addOptionsKey"
       @close="closeCollegeModal"
       @saved="handleCollegeAdded"
     />
 
-    <!-- Edit Modal - เพิ่มส่วนนี้ -->
+    <!-- Edit Modal -->
     <EditCollegeModal
       :showModal="showEditModal"
       :selectedCollege="selectedCollege"
@@ -251,13 +240,16 @@
       :showModal="showCollegeDetailModal"
       :closeModal="closeCollegeDetailModal"
       :collegeId="selectedCollegeDetail?.id ?? null"
+      :initial-detail="selectedCollegeDetail"
+      :open-after-loaded="true"
       @close="closeCollegeDetailModal"
+      @request-edit="onDetailRequestEdit"
       @saved="handleCollegeEdited"
     />
   </div>
+
   <!-- Loading Overlay -->
   <div v-if="isLoading" class="loading-overlay">
-    <!-- From Uiverse.io by forgingdestiny -->
     <div class="loader">
       <div class="circle" tabindex="0"></div>
       <div class="circle" tabindex="0"></div>
@@ -267,15 +259,14 @@
     </div>
   </div>
 </template>
-
 <script setup>
 import { ref, reactive, computed, watch, nextTick } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
   getCollegesPaginated,
   countCurriculum,
-  provinceList, // ← ใช้ API provinces
-  countryList, // ← ใช้ API countries
+  provinceList,
+  countryList,
 } from "@/services/apiService";
 
 import SearchCollegeAdmin from "@/components/SearchCollegeAdmin.vue";
@@ -287,28 +278,78 @@ import DetailCollegeModal from "@/components/DetailCollegeModal.vue";
 const route = useRoute();
 const router = useRouter();
 
-/** ---------- master maps (ประเทศ/จังหวัด) ---------- */
+/* ===================== Modal States ===================== */
+const showCollegeModal = ref(false);        // Add
+const showCollegeDetailModal = ref(false);  // Detail
+const showEditModal = ref(false);           // Edit
+
+const selectedCollege = ref(null);          // ใช้กับ Edit
+const selectedCollegeDetail = ref(null);    // ใช้กับ Detail
+const detailKey = ref(0);                   // force remount detail
+
+const addOptionsKey = ref(0);
+
+// กันคลิกเร็ว/ซ้อน
+const isTransitioning = ref(false);
+async function transition(fn) {
+  if (isTransitioning.value) return;
+  isTransitioning.value = true;
+  try {
+    await fn();
+  } finally {
+    isTransitioning.value = false;
+  }
+}
+
+// ปิดทุกโมดอลก่อนเปิดอันใหม่
+async function closeAllModals() {
+  showCollegeModal.value = false;
+  showCollegeDetailModal.value = false;
+  showEditModal.value = false;
+  await nextTick(); // ให้ DOM unmount ให้ครบ
+}
+
+// ไปหน้า Detail (รับ id หรือ object ที่มี id)
+async function toDetail(idOrObj) {
+  await transition(async () => {
+    await closeAllModals();
+
+    const id =
+      typeof idOrObj === "object" && idOrObj !== null
+        ? idOrObj.id ?? idOrObj.college_id ?? idOrObj.collegeId ?? null
+        : idOrObj;
+
+    selectedCollegeDetail.value = {
+      id: Number(id) || null,
+      ...(typeof idOrObj === "object" ? idOrObj : {}),
+    };
+    detailKey.value++; // ให้ลูกรีเฟรชข้อมูลทุกครั้ง
+    await nextTick();
+    showCollegeDetailModal.value = true;
+  });
+}
+
+// ไปหน้า Edit (ส่ง payload สำหรับ prefill)
+async function toEdit(payload) {
+  await transition(async () => {
+    await closeAllModals();
+    selectedCollege.value = payload ?? null;
+    showEditModal.value = true;
+  });
+}
+
+/* ===================== Masters (ประเทศ/จังหวัด) ===================== */
+// ✅ แก้: ต้องมีค่าเริ่มต้น byId: Map()
 const countriesRef = ref({ byId: new Map() });
 const provincesRef = ref({ byId: new Map() });
 const mastersLoaded = ref(false);
 
 function seedIdNameMap(target, list = []) {
   for (const it of list) {
-    // รองรับหลายรูปแบบ field ของ API
     const id =
-      it?.id ??
-      it?.country_id ??
-      it?.province_id ??
-      it?.value ??
-      it?.code ??
-      it?.pk;
+      it?.id ?? it?.country_id ?? it?.province_id ?? it?.value ?? it?.code ?? it?.pk;
     const name =
-      it?.name_th ??
-      it?.thai_name ??
-      it?.nameTh ??
-      it?.name ??
-      it?.label ??
-      it?.title;
+      it?.name_th ?? it?.thai_name ?? it?.nameTh ?? it?.name ?? it?.label ?? it?.title;
     if (id != null && name) {
       const keyNum = Number(id);
       target.set(Number.isFinite(keyNum) ? keyNum : String(id), String(name));
@@ -316,43 +357,10 @@ function seedIdNameMap(target, list = []) {
   }
 }
 
-async function handleCollegeAdded(e) {
-  // e.id มาจาก AddCollegeModal
-  selectedCollegeDetail.value = { id: e?.id };
-  showCollegeDetailModal.value = true;
-  // รีเฟรชตารางหลังเปิด detail (กัน overlay มาบัง)
-  await nextTick();
-  fetchData();
-}
-
-const detailKey = ref(0); // ใช้บังคับรีโหลดโมดัลรายละเอียด (ถ้าต้องการ)
-
-async function handleCollegeEdited(e) {
-  // ปิดหน้าต่างแก้ไขก่อน
-  showEditModal.value = false;
-
-  // (ทางเลือก) อัปเดตแถวที่แก้ไขแบบ optimistic เพื่อให้ผู้ใช้เห็นผลทันที
-  const i = rows.value.findIndex((r) => String(r.id) === String(e?.id));
-  if (i > -1) {
-    rows.value[i] = mapCollege({ ...rows.value[i], ...e }); // รวมค่าที่แก้
-  }
-
-  // รีเฟรชข้อมูลจากเซิร์ฟเวอร์เพื่อให้ข้อมูลตรงจริง
-  await fetchData();
-
-  // เปิดโมดัลรายละเอียดของรายการที่เพิ่งแก้ (ถ้าต้องการ)
-  selectedCollegeDetail.value = { id: e?.id };
-  detailKey.value++; // บังคับรีเมานท์ให้ดึงข้อมูลล่าสุดเสมอ
-  showCollegeDetailModal.value = true;
-}
-
 async function loadMastersOnce() {
   if (mastersLoaded.value) return;
   try {
-    const [provRes, countryRes] = await Promise.all([
-      provinceList(),
-      countryList(),
-    ]);
+    const [provRes, countryRes] = await Promise.all([provinceList(), countryList()]);
     const provinces = provRes?.data?.data ?? provRes?.data ?? [];
     const countries = countryRes?.data?.data ?? countryRes?.data ?? [];
     provincesRef.value.byId.clear();
@@ -360,18 +368,16 @@ async function loadMastersOnce() {
     seedIdNameMap(provincesRef.value.byId, provinces);
     seedIdNameMap(countriesRef.value.byId, countries);
   } finally {
-    mastersLoaded.value = true; // ป้องกันโหลดซ้ำ แม้ error จะ fallback เป็นค่าว่าง
+    mastersLoaded.value = true; // กันโหลดซ้ำ ถึงแม้ error
   }
 }
 
-/** ---------- counts (จาก /education/countCurriculums) ---------- */
+/* ===================== Count Curriculums ===================== */
 const countsRef = ref({ byId: new Map(), byName: new Map() });
 const countsLoaded = ref(false);
 
 function normalizeNameKey(s) {
-  return String(s ?? "")
-    .trim()
-    .toLowerCase();
+  return String(s ?? "").trim().toLowerCase();
 }
 function hydrateCounts(list = []) {
   countsRef.value.byId.clear();
@@ -387,7 +393,7 @@ function hydrateCounts(list = []) {
   countsLoaded.value = true;
 }
 
-/** ✅ ค่ามาตรฐาน (sort = field, order = direction) */
+/* ===================== Table & Query State ===================== */
 const DEFAULTS = {
   page: 1,
   limit: 10,
@@ -399,10 +405,8 @@ const DEFAULTS = {
   status: "",
 };
 
-/** ---------- state ที่ sync กับ URL ---------- */
 const state = reactive({ ...DEFAULTS });
 
-/** ---------- ตาราง + meta ---------- */
 const isLoading = ref(false);
 const rows = ref([]);
 const meta = ref({
@@ -413,18 +417,9 @@ const meta = ref({
 });
 
 const colleges = computed(() => rows.value);
-const totalItems = computed(() =>
-  Number(meta.value?.total ?? rows.value.length)
-);
+const totalItems = computed(() => Number(meta.value?.total ?? rows.value.length));
 
-/** ---------- modal & selections ---------- */
-const showCollegeModal = ref(false);
-const showEditModal = ref(false);
-const showCollegeDetailModal = ref(false);
-const selectedCollege = ref(null);
-const selectedCollegeDetail = ref(null);
-
-/** ---------- utils ---------- */
+/* ===================== Helpers ===================== */
 const toInt = (v, d) => {
   const n = parseInt(v, 10);
   return Number.isFinite(n) ? n : d;
@@ -432,16 +427,58 @@ const toInt = (v, d) => {
 const toOpt = (v) => {
   if (v == null) return "";
   const s = String(v).trim();
-  return s === "" ||
-    s.toLowerCase() === "undefined" ||
-    s.toLowerCase() === "null"
-    ? ""
-    : s;
+  return s === "" || s.toLowerCase() === "undefined" || s.toLowerCase() === "null" ? "" : s;
 };
 const isNumericId = (v) =>
   typeof v === "number" || (typeof v === "string" && /^\d+$/.test(v.trim()));
 
-/** ---------- URL -> state ---------- */
+function resolveName(raw, mapRef) {
+  if (raw == null) return "";
+  if (typeof raw === "object")
+    return raw.name_th ?? raw.nameTh ?? raw.name ?? raw.label ?? "";
+  if (isNumericId(raw)) {
+    const keyNum = Number(raw);
+    const keyStr = String(raw);
+    return mapRef.byId.get(keyNum) ?? mapRef.byId.get(keyStr) ?? "";
+  }
+  return String(raw);
+}
+
+function mapCollege(c = {}, counts = countsRef.value) {
+  const countryRaw = c.countryName ?? c.country_name ?? c.country;
+  const provinceRaw = c.provinceName ?? c.province_name ?? c.province;
+
+  const countryName = resolveName(countryRaw, countriesRef.value);
+  const provinceName = resolveName(provinceRaw, provincesRef.value);
+
+  const id = Number(c.id ?? c.college_id ?? c.collegeId);
+  const nameKey = normalizeNameKey(c.name ?? c.college_name ?? "");
+
+  const fromCountApi =
+    (Number.isFinite(id) ? counts.byId.get(id) : undefined) ??
+    (nameKey ? counts.byName.get(nameKey) : undefined);
+
+  const candidate =
+    (typeof fromCountApi === "number" ? fromCountApi : undefined) ??
+    Number(
+      c.curriculumCount ??
+        c.curriculum_count ??
+        c.curriculums_count ??
+        (Array.isArray(c.curriculums) ? c.curriculums.length : undefined)
+    );
+
+  const curriculumCount =
+    typeof candidate === "number" && Number.isFinite(candidate) ? candidate : 0;
+
+  return {
+    ...c,
+    countryName: countryName || " ", // กันคอลัมน์หด
+    provinceName: provinceName || " ",
+    curriculumCount,
+  };
+}
+
+/* ===================== URL Sync ===================== */
 function syncFromUrl() {
   const q = route.query;
   state.page = toInt(q.page, DEFAULTS.page);
@@ -454,7 +491,6 @@ function syncFromUrl() {
   state.status = toOpt(q.status) || DEFAULTS.status;
 }
 
-/** ---------- state -> query ---------- */
 function buildQuery(partial = {}) {
   const s = { ...state, ...partial };
   const allDefault =
@@ -482,73 +518,27 @@ async function pushQuery(partial = {}) {
   await router.replace({ query: buildQuery(partial) });
 }
 
-/** ---------- ช่วยแปลง id → ชื่อ ผ่าน Map ---------- */
-function resolveName(raw, mapRef) {
-  if (raw == null) return "";
-  if (typeof raw === "object") {
-    return raw.name_th ?? raw.nameTh ?? raw.name ?? raw.label ?? "";
-  }
-  if (isNumericId(raw)) {
-    const keyNum = Number(raw);
-    const keyStr = String(raw);
-    return mapRef.byId.get(keyNum) ?? mapRef.byId.get(keyStr) ?? "";
-  }
-  return String(raw);
+function onPageChange(page) {
+  pushQuery({ page });
+}
+function onPerPageChange(perPage) {
+  pushQuery({ page: 1, limit: perPage });
 }
 
-/** ---------- mapCollege ---------- */
-function mapCollege(c = {}, counts = countsRef.value) {
-  const countryRaw = c.countryName ?? c.country_name ?? c.country;
-  const provinceRaw = c.provinceName ?? c.province_name ?? c.province;
-
-  const countryName = resolveName(countryRaw, countriesRef.value);
-  const provinceName = resolveName(provinceRaw, provincesRef.value);
-
-  const id = Number(c.id ?? c.college_id ?? c.collegeId);
-  const nameKey = normalizeNameKey(c.name ?? c.college_name ?? "");
-
-  // ใช้จำนวนจาก countCurriculum ก่อน ถ้ามี
-  const fromCountApi =
-    (Number.isFinite(id) ? counts.byId.get(id) : undefined) ??
-    (nameKey ? counts.byName.get(nameKey) : undefined);
-
-  const candidate =
-    (typeof fromCountApi === "number" ? fromCountApi : undefined) ??
-    Number(
-      c.curriculumCount ??
-        c.curriculum_count ??
-        c.curriculums_count ??
-        (Array.isArray(c.curriculums) ? c.curriculums.length : undefined)
-    );
-
-  const curriculumCount =
-    typeof candidate === "number" && Number.isFinite(candidate) ? candidate : 0;
-
-  return {
-    ...c,
-    countryName: countryName || " ", // กันคอลัมน์หด
-    provinceName: provinceName || " ",
-    curriculumCount,
-  };
-}
-
-/** ---------- โหลดข้อมูล ---------- */
+/* ===================== Fetch ===================== */
 let lastReqId = 0;
 async function fetchData() {
   const reqId = ++lastReqId;
   try {
     isLoading.value = true;
 
-    // โหลด master (ประเทศ/จังหวัด) และ countCurriculum ให้พร้อมก่อน
-    if (!mastersLoaded.value) {
-      await loadMastersOnce();
-    }
+    if (!mastersLoaded.value) await loadMastersOnce();
     if (!countsLoaded.value) {
       try {
         const cnt = await countCurriculum();
         hydrateCounts(cnt?.data?.data ?? cnt?.data ?? []);
       } catch {
-        // ถ้า error ก็ปล่อยให้ fallback = 0
+        /* ignore */
       }
     }
 
@@ -593,7 +583,7 @@ async function fetchData() {
   }
 }
 
-/** ---------- filters ---------- */
+/* ===================== Filters ===================== */
 function normalizeFilterFromPayload(payload = {}) {
   return {
     search: (payload.search ?? "").trim(),
@@ -622,21 +612,29 @@ function onFiltersUpdate(payload) {
   pushQuery({ page: 1, ...nextFilters });
 }
 
-/** ---------- handlers ---------- */
-function onPageChange(page) {
-  pushQuery({ page });
+/* ===================== Handlers (เปิด/ปิด) ===================== */
+function openAddCollegeModal() {
+  closeAllModals();
+  addOptionsKey.value++;
+  showCollegeModal.value = true;
 }
-function onPerPageChange(perPage) {
-  pushQuery({ page: 1, limit: perPage });
+
+// ✅ ใส่ alias ให้ตรงกับ template ที่เรียก
+function openDetailOnly(item) {
+  toDetail(item?.id ?? item);
+}
+function openEditFromList(item) {
+  toEdit(item);
+}
+
+// (ยังคงไว้เผื่อที่อื่นเรียก)
+function openDetailCollegeModal(item) {
+  toDetail(item?.id ?? item);
 }
 function openEditcollegeModal(item) {
-  selectedCollege.value = item;
-  showEditModal.value = true;
+  toEdit(item);
 }
-function openDetailCollegeModal(item) {
-  selectedCollegeDetail.value = item;
-  showCollegeDetailModal.value = true;
-}
+
 function closeCollegeModal() {
   showCollegeModal.value = false;
 }
@@ -644,9 +642,31 @@ function closeCollegeDetailModal() {
   showCollegeDetailModal.value = false;
   selectedCollegeDetail.value = null;
 }
-// หน้า List
 
-/** ---------- lifecycle ---------- */
+/* ====== callbacks หลังบันทึก/เพิ่ม ====== */
+async function handleCollegeAdded(payload) {
+  await toDetail(payload?.id ?? payload);  // ไปดูรายละเอียดตัวที่เพิ่งเพิ่ม
+  fetchData();                             // รีเฟรชตาราง
+}
+
+async function handleCollegeEdited(payload) {
+  showEditModal.value = false;
+  await nextTick();
+
+  // optimistic update
+  const i = rows.value.findIndex((r) => String(r.id) === String(payload?.id));
+  if (i > -1) rows.value[i] = mapCollege({ ...rows.value[i], ...payload });
+
+  await fetchData();
+  await toDetail(payload?.id);
+}
+
+/* ====== กดแก้ไขจากหน้า Detail ====== */
+async function onDetailRequestEdit(payload) {
+  await toEdit(payload);
+}
+
+/* ===================== Lifecycle ===================== */
 watch(
   () => route.fullPath,
   () => {
@@ -656,8 +676,6 @@ watch(
   { immediate: true }
 );
 </script>
-
-
 
 
 
@@ -673,16 +691,12 @@ watch(
   z-index: 900;
 }
 
-/* From Uiverse.io by forgingdestiny */
-/* Container for the loader */
 .loader {
   display: flex;
   justify-content: center;
   align-items: center;
   height: 10em;
 }
-
-/* Circle elements */
 .circle {
   width: 1em;
   height: 1em;
@@ -692,36 +706,27 @@ watch(
   animation: wave 1.5s infinite ease-in-out;
   transition: background-color 0.3s ease;
 }
-
-/* Animation */
 @keyframes wave {
   0%,
   100% {
     transform: translateY(0);
   }
-
   50% {
     transform: translateY(-1em);
   }
 }
-
-/* Delay for each circle */
 .circle:nth-child(1) {
   animation-delay: 0s;
 }
-
 .circle:nth-child(2) {
   animation-delay: 0.2s;
 }
-
 .circle:nth-child(3) {
   animation-delay: 0.4s;
 }
-
 .circle:nth-child(4) {
   animation-delay: 0.6s;
 }
-
 .circle:nth-child(5) {
   animation-delay: 0.8s;
 }

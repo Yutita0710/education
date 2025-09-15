@@ -1,307 +1,302 @@
 <template>
-  <!-- ✅ ทำให้มี root เดียว -->
-  <div
-    v-if="showModal"
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 text-gray-700"
-  >
-    <!-- กล่องโมดัล: สูงคงที่ -->
+  <!-- ✅ ทำให้มี root เดียวจริง ๆ โดยห่อทั้งหมดด้วย <div> -->
+  <div>
     <div
-      class="bg-white rounded-2xl shadow-xl w-full max-w-4xl relative h-[70vh] overflow-hidden"
+     v-if="internalShow"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 text-gray-700"
+      v-bind="$attrs"
     >
-      <!-- เลย์เอาต์ภายใน -->
-      <div class="flex flex-col h-full">
-        <!-- HEADER: sticky -->
-        <div class="sticky top-0 z-20 bg-white px-6 pt-6 pb-4 border-b">
-          <div class="grid grid-cols-[1fr_auto_1fr] items-center">
-            <div></div>
-            <h2 class="text-xl font-bold text-center">รายละเอียดสถาบัน</h2>
+      <!-- กล่องโมดัล: สูงคงที่ -->
+      <div
+        class="bg-white rounded-2xl shadow-xl w-full max-w-4xl relative h-[70vh] overflow-hidden"
+      >
+        <!-- เลย์เอาต์ภายใน -->
+        <div class="flex flex-col h-full">
+          <!-- HEADER: sticky -->
+          <div class="sticky top-0 z-20 bg-white px-6 pt-6 pb-4 border-b">
+            <div class="grid grid-cols-[1fr_auto_1fr] items-center">
+              <div></div>
+              <h2 class="text-xl font-bold text-center">รายละเอียดสถาบัน</h2>
 
-            <div class="justify-self-end flex items-center gap-2">
-              <!-- ปุ่มดินสอ -->
-              <button
-                @click.stop="onEditClick"
-                :aria-describedby="
-                  detail?.id ? `tt-edit-${detail.id}` : 'tt-edit'
-                "
-                type="button"
-                class="inline-flex items-center bg-[#F8B15D] text-white w-20 h-10 rounded-full hover:bg-orange-500 transition justify-center"
-                aria-label="Edit"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke-width="1.5"
-                  stroke="currentColor"
-                  class="size-6"
+              <div class="justify-self-end flex items-center gap-2">
+                <!-- ปุ่มดินสอ -->
+                <button
+                  @click.stop="onEditClick"
+                  :aria-describedby="
+                    detail?.id ? `tt-edit-${detail.id}` : 'tt-edit'
+                  "
+                  type="button"
+                  class="inline-flex items-center bg-[#F8B15D] text-white w-20 h-10 rounded-full hover:bg-orange-500 transition justify-center"
+                  aria-label="Edit"
                 >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
-                  />
-                </svg>
-                แก้ไข
-              </button>
-
-              <!-- ปุ่มปิด -->
-              <button
-                @click="handleClose"
-                type="button"
-                class="inline-flex items-center justify-center w-10 h-10 rounded-full text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition"
-                aria-label="Close modal"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  class="size-20"
-                >
-                  <path
-                    fill-rule="evenodd"
-                    d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm-1.72 6.97a.75.75 0 1 0-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 1 0 1.06 1.06L12 13.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L13.06 12l1.72-1.72a.75.75 0 1 0-1.06-1.06L12 10.94l-1.72-1.72Z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Loading -->
-        <div v-if="isLoading" class="py-8 text-center text-gray-500">
-          กำลังโหลดข้อมูล...
-        </div>
-
-        <!-- Error -->
-        <div v-else-if="loadError" class="py-6">
-          <p class="text-red-600 font-medium text-center">
-            ไม่สามารถดึงข้อมูลได้: {{ loadError }}
-          </p>
-          <div class="flex justify-center mt-4">
-            <button
-              type="button"
-              @click="fetchDetail"
-              class="bg-blue-600 hover:bg-blue-600/90 text-white px-4 py-2 rounded-lg"
-            >
-              ลองใหม่
-            </button>
-          </div>
-        </div>
-
-        <!-- CONTENT: เลื่อนเฉพาะส่วนนี้ -->
-        <div
-          class="flex-1 overflow-y-auto px-14 py-4 space-y-4 [scrollbar-gutter:stable] overscroll-contain"
-        >
-          <!-- ====== เนื้อหาทั้งหมดของคุณ วางเหมือนเดิมที่นี่ ====== -->
-          <!-- ตัวอย่าง: ชื่อสถาบัน -->
-          <div class="grid grid-cols-[210px_minmax(0,1fr)] gap-6 items-start">
-            <div class="md:text-left">
-              <label class="block text-gray-700">
-                <span class="inline-flex items-center gap-1 font-bold"
-                  >ชื่อสถาบัน</span
-                >
-              </label>
-            </div>
-
-            <!-- คอลัมน์เนื้อหา -->
-            <div class="min-w-0">
-              <span
-                class="block text-gray-900 font-medium break-words whitespace-normal hyphens-auto"
-              >
-                {{ detail.name || "-" }}
-              </span>
-            </div>
-          </div>
-
-          <!-- วิทยาเขต -->
-          <div class="grid grid-cols-[210px_1fr] gap-6">
-            <div class="md:text-left">
-              <label class="block text-gray-700">
-                <span class="inline-flex items-center gap-1 font-bold"
-                  >วิทยาเขต</span
-                >
-              </label>
-            </div>
-            <div>
-              <span class="text-gray-900 font-medium">{{
-                detail.campus || "-"
-              }}</span>
-            </div>
-          </div>
-
-          <!-- กลุ่มสถาบัน (ตาราง) -->
-          <div class="mb-6 flex flex-col gap-4" v-if="!sameGroupAsSelf">
-            <div>
-              <label class="block text-gray-700 mb-2">
-                <span class="flex items-center gap-1 font-bold"
-                  >กลุ่มสถาบัน</span
-                >
-              </label>
-            </div>
-            <div>
-              <div
-                class="relative overflow-x-auto shadow-md sm:rounded-lg"
-                :class="
-                  (groupColleges?.length ?? 0) > 3
-                    ? 'overflow-y-auto max-h-[calc(3*3rem+3rem)]'
-                    : ''
-                "
-              >
-                <table
-                  class="w-full table-fixed text-sm text-left rtl:text-right text-gray-500"
-                >
-                  <thead
-                    class="font-medium text-gray-700 uppercase bg-[#E2EDFC] sticky top-0 z-10"
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="1.5"
+                    stroke="currentColor"
+                    class="size-6"
                   >
-                    <tr>
-                      <th scope="col" class="px-6 py-3">ลำดับ</th>
-                      <th scope="col" class="px-6 py-3">ชื่อสถาบัน</th>
-                      <th scope="col" class="px-6 py-3">วิทยาเขต</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr
-                      v-if="!groupColleges || groupColleges.length === 0"
-                      class="odd:bg-white even:bg-gray-50 border-b border-gray-200"
-                    >
-                      <td
-                        colspan="3"
-                        class="px-6 py-4 text-center text-gray-400"
-                      >
-                        - ไม่พบกลุ่มสถาบัน -
-                      </td>
-                    </tr>
-                    <tr
-                      v-for="(g, idx) in groupColleges"
-                      :key="g.id || idx"
-                      class="border-b border-gray-200 odd:bg-white even:bg-gray-50"
-                      :class="
-                        Number(g.id) === Number(detail.id) ? 'bg-blue-50' : ''
-                      "
-                    >
-                      <td class="px-6 py-4">{{ idx + 1 }}</td>
-                      <th
-                        scope="row"
-                        class="px-6 py-4 text-gray-900 min-w-0 whitespace-normal break-words"
-                      >
-                        {{ g.name || "-" }}
-                      </th>
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+                    />
+                  </svg>
+                  แก้ไข
+                </button>
 
-                      <!-- คอลัมน์วิทยาเขต: อนุญาตให้ตัดบรรทัด -->
-                      <td
-                        class="px-6 py-4 min-w-0 whitespace-normal break-words"
-                      >
-                        {{ g.campus || "-" }}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+                <!-- ปุ่มปิด -->
+                <button
+                  @click="handleClose"
+                  type="button"
+                  class="inline-flex items-center justify-center w-10 h-10 rounded-full text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition"
+                  aria-label="Close modal"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    class="size-20"
+                  >
+                    <path
+                      fill-rule="evenodd"
+                      d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm-1.72 6.97a.75.75 0 1 0-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 1 0 1.06 1.06L12 13.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L13.06 12l1.72-1.72a.75.75 0 1 0-1.06-1.06L12 10.94l-1.72-1.72Z"
+                      clip-rule="evenodd"
+                    />
+                  </svg>
+                </button>
               </div>
             </div>
           </div>
-          <div v-else class="grid grid-cols-[210px_1fr] gap-6">
-            <div class="md:text-left">
-              <label class="block text-gray-700">
-                <span class="inline-flex items-center gap-1 font-bold"
-                  >กลุ่มสถาบัน</span
-                >
-              </label>
-            </div>
-            <div>
-              <span class="text-gray-900 font-medium">-</span>
-            </div>
-          </div>
 
-          <!-- ประเทศ -->
-          <div class="grid grid-cols-[210px_1fr] gap-6">
-            <div class="md:text-left">
-              <label class="block text-gray-700">
-                <span class="inline-flex items-center gap-1 font-bold"
-                  >ประเทศ</span
-                >
-              </label>
-            </div>
-            <div>
-              <span class="text-gray-900 font-medium">{{
-                countryDisplay
-              }}</span>
-            </div>
-          </div>
+          <!-- Loading -->
+          <!-- <div v-if="isLoading" class="py-8 text-center text-gray-500">
+            กำลังโหลดข้อมูล...
+          </div> -->
 
-          <!-- จังหวัด -->
-          <div class="grid grid-cols-[210px_minmax(0,1fr)] gap-6">
-            <div class="md:text-left">
-              <label class="block text-gray-700">
-                <span class="inline-flex items-center gap-1 font-bold"
-                  >จังหวัด</span
-                >
-              </label>
-            </div>
-
-            <div class="min-w-0">
-              <span
-                class="block text-gray-900 font-medium whitespace-normal break-words hyphens-auto"
+          <!-- Error -->
+          <!-- <div v-else-if="loadError" class="py-6">
+            <p class="text-red-600 font-medium text-center">
+              ไม่สามารถดึงข้อมูลได้: {{ loadError }}
+            </p>
+            <div class="flex justify-center mt-4">
+              <button
+                type="button"
+                @click="fetchDetail"
+                class="bg-blue-600 hover:bg-blue-600/90 text-white px-4 py-2 rounded-lg"
               >
-                {{ provinceDisplay || "-" }}
-              </span>
+                ลองใหม่
+              </button>
             </div>
-          </div>
+          </div> -->
 
-          <!-- จำนวนหลักสูตร -->
-          <div class="grid grid-cols-[210px_1fr] gap-6">
-            <div class="md:text-left">
-              <label class="block text-gray-700">
-                <span class="inline-flex items-center gap-1 font-bold"
-                  >จำนวนหลักสูตร</span
+          <!-- CONTENT: เลื่อนเฉพาะส่วนนี้ -->
+          <div
+            class="flex-1 overflow-y-auto px-14 py-4 space-y-4 [scrollbar-gutter:stable] overscroll-contain"
+          >
+            <!-- ====== เนื้อหาทั้งหมดของคุณ วางเหมือนเดิมที่นี่ ====== -->
+            <!-- ตัวอย่าง: ชื่อสถาบัน -->
+            <div class="grid grid-cols-[210px_minmax(0,1fr)] gap-6 items-start">
+              <div class="md:text-left">
+                <label class="block text-gray-700">
+                  <span class="inline-flex items-center gap-1 font-bold"
+                    >ชื่อสถาบัน</span
+                  >
+                </label>
+              </div>
+
+              <!-- คอลัมน์เนื้อหา -->
+              <div class="min-w-0">
+                <span
+                  class="block text-gray-900 font-medium break-words whitespace-normal hyphens-auto"
                 >
-              </label>
+                  {{ detail.name || "-" }}
+                </span>
+              </div>
             </div>
-            <div>
-              <span
-                class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full"
-              >
-                {{ detail.curriculumCount }} หลักสูตร
-              </span>
-            </div>
-          </div>
 
-          <!-- สถานะการใช้งาน -->
-          <div class="grid grid-cols-[210px_1fr] gap-6">
-            <div class="md:text-left">
-              <label class="block text-gray-700">
-                <span class="inline-flex items-center gap-1 font-bold"
-                  >สถานะการใช้งาน</span
+            <!-- วิทยาเขต -->
+            <div class="grid grid-cols-[210px_1fr] gap-6">
+              <div class="md:text-left">
+                <label class="block text-gray-700">
+                  <span class="inline-flex items-center gap-1 font-bold"
+                    >วิทยาเขต</span
+                  >
+                </label>
+              </div>
+              <div>
+                <span class="text-gray-900 font-medium">{{
+                  detail.campus || "-"
+                }}</span>
+              </div>
+            </div>
+            <div
+              v-if="sameGroupAsSelf"
+              class="grid grid-cols-[210px_1fr] gap-6"
+            >
+              <div class="md:text-left">
+                <label class="block text-gray-700">
+                  <span class="inline-flex items-center gap-1 font-bold"
+                    >กลุ่มสถาบัน</span
+                  >
+                </label>
+              </div>
+              <div>
+                <span class="text-gray-900 font-medium">-</span>
+              </div>
+            </div>
+
+            <!-- กลุ่มสถาบัน (ตาราง) -->
+            <div v-else-if="hasGroup" class="mb-6 flex flex-col gap-4">
+              <div>
+                <label class="block text-gray-700 mb-2">
+                  <span class="flex items-center gap-1 font-bold"
+                    >กลุ่มสถาบัน</span
+                  >
+                </label>
+              </div>
+              <div>
+                <div
+                  class="relative overflow-x-auto shadow-md sm:rounded-lg"
+                  :class="
+                    (groupColleges?.length ?? 0) > 3
+                      ? 'overflow-y-auto max-h-[calc(3*3rem+3rem)]'
+                      : ''
+                  "
                 >
-              </label>
-            </div>
-            <div>
-              <span
-                class="text-xs font-medium px-2.5 py-0.5 rounded-full"
-                :class="
-                  Number(detail.active) === 1
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-red-100 text-red-800'
-                "
-              >
-                {{ Number(detail.active) === 1 ? "ใช้งาน" : "ไม่ใช้งาน" }}
-              </span>
-            </div>
-          </div>
+                  <table
+                    class="w-full table-fixed text-sm text-left rtl:text-right text-gray-500"
+                  >
+                    <thead
+                      class="font-medium text-gray-700 uppercase bg-[#E2EDFC] sticky top-0 z-10"
+                    >
+                      <tr>
+                        <th scope="col" class="px-6 py-3">ลำดับ</th>
+                        <th scope="col" class="px-6 py-3">ชื่อสถาบัน</th>
+                        <th scope="col" class="px-6 py-3">วิทยาเขต</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr
+                        v-for="(g, idx) in groupColleges"
+                        :key="g.id || idx"
+                        class="border-b border-gray-200 odd:bg-white even:bg-gray-50"
+                        :class="
+                          Number(g.id) === Number(detail.id) ? 'bg-blue-50' : ''
+                        "
+                      >
+                        <td class="px-6 py-4">{{ idx + 1 }}</td>
+                        <th
+                          scope="row"
+                          class="px-6 py-4 text-gray-900 min-w-0 whitespace-normal break-words"
+                        >
+                          {{ g.name || "-" }}
+                        </th>
 
-          <!-- FOOTER: (ถ้าต้องการให้อยู่กับที่) -->
+                        <!-- คอลัมน์วิทยาเขต: อนุญาตให้ตัดบรรทัด -->
+                        <td
+                          class="px-6 py-4 min-w-0 whitespace-normal break-words"
+                        >
+                          {{ g.campus || "-" }}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- ประเทศ -->
+            <div class="grid grid-cols-[210px_1fr] gap-6">
+              <div class="md:text-left">
+                <label class="block text-gray-700">
+                  <span class="inline-flex items-center gap-1 font-bold"
+                    >ประเทศ</span
+                  >
+                </label>
+              </div>
+              <div>
+                <span class="text-gray-900 font-medium">{{
+                  countryDisplay
+                }}</span>
+              </div>
+            </div>
+
+            <!-- จังหวัด -->
+            <div class="grid grid-cols-[210px_minmax(0,1fr)] gap-6">
+              <div class="md:text-left">
+                <label class="block text-gray-700">
+                  <span class="inline-flex items-center gap-1 font-bold"
+                    >จังหวัด</span
+                  >
+                </label>
+              </div>
+
+              <div class="min-w-0">
+                <span
+                  class="block text-gray-900 font-medium whitespace-normal break-words hyphens-auto"
+                >
+                  {{ provinceDisplay || "-" }}
+                </span>
+              </div>
+            </div>
+
+            <!-- จำนวนหลักสูตร -->
+            <div class="grid grid-cols-[210px_1fr] gap-6">
+              <div class="md:text-left">
+                <label class="block text-gray-700">
+                  <span class="inline-flex items-center gap-1 font-bold"
+                    >จำนวนหลักสูตร</span
+                  >
+                </label>
+              </div>
+              <div>
+                <span
+                  class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full"
+                >
+                  {{ detail.curriculumCount }} หลักสูตร
+                </span>
+              </div>
+            </div>
+
+            <!-- สถานะการใช้งาน -->
+            <div class="grid grid-cols-[210px_1fr] gap-6">
+              <div class="md:text-left">
+                <label class="block text-gray-700">
+                  <span class="inline-flex items-center gap-1 font-bold"
+                    >สถานะการใช้งาน</span
+                  >
+                </label>
+              </div>
+              <div>
+                <span
+                  class="text-xs font-medium px-2.5 py-0.5 rounded-full"
+                  :class="
+                    Number(detail.active) === 1
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-red-100 text-red-800'
+                  "
+                >
+                  {{ Number(detail.active) === 1 ? "ใช้งาน" : "ไม่ใช้งาน" }}
+                </span>
+              </div>
+            </div>
+
+            <!-- FOOTER: (ถ้าต้องการให้อยู่กับที่) -->
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- ✅ ย้ายไว้ใต้ root เดียวกัน และผูก state/handlers ให้ครบ -->
-  <EditCollegeModal
-    :showModal="showEditModal"
-    :selectedCollege="selectedCollege"
-    @close="closeEditModal"
-    @saved="onEditSaved"
-  />
+    <!-- ✅ อยู่ภายใต้ root เดียวกัน -->
+    <EditCollegeModal
+      :showModal="showEditModal"
+      :selectedCollege="selectedCollege"
+      @close="closeEditModal"
+      @saved="onEditSaved"
+    />
+  </div>
 </template>
 
 <script setup>
@@ -314,15 +309,18 @@ import {
   getCollegesGrouped,
 } from "@/services/apiService";
 import EditCollegeModal from "./EditCollegeModal.vue";
-
+defineOptions({ inheritAttrs: false });
 /** =========== Props/Emits ============ */
 const props = defineProps({
   showModal: { type: Boolean, default: false },
   closeModal: { type: Function, default: () => {} },
   collegeId: { type: [Number, String], default: null },
+  initialDetail: { type: Object, default: null },
+  openAfterLoaded: { type: Boolean, default: true },
 });
-const emit = defineEmits(["request-edit", "close", "refresh-data"]);
-
+const emit = defineEmits(["request-edit", "close", "refresh-data", "saved"]);
+const internalShow = ref(false);
+let reqId = 0;
 /** =========== State ============ */
 const isLoading = ref(false);
 const loadError = ref("");
@@ -342,6 +340,29 @@ const detail = reactive({
   institute_group: null,
   group: [],
 });
+
+function prefillFromInitial() {
+  if (!props.initialDetail) return;
+  const src = props.initialDetail;
+  const fields = [
+    "id",
+    "name",
+    "campus",
+    "country",
+    "province",
+    "province_name",
+    "countryName",
+    "provinceName",
+    "curriculumCount",
+    "active",
+    "institute_group",
+    "group",
+  ];
+  for (const k of fields) {
+    const v = src?.[k];
+    if (v !== undefined && v !== null) detail[k] = v;
+  }
+}
 
 /** ✅ State ของ Edit modal */
 const showEditModal = ref(false);
@@ -423,6 +444,10 @@ const sameGroupAsSelf = computed(() => {
     detail?.institute_group != null ? String(detail.institute_group) : "";
   return gid !== "" && id !== "" && gid === id;
 });
+
+const hasGroup = computed(
+  () => Array.isArray(groupColleges.value) && groupColleges.value.length > 0
+);
 /** ========== Fetchers ========== */
 async function fetchMasterOptions() {
   try {
@@ -506,9 +531,11 @@ async function fetchDetail() {
 
     const groupIdNum = toIntOrNull(detail.institute_group);
 
-    // ===== ดึง count + สมาชิกในกลุ่ม (ส่งเลขให้แน่ใจ) =====
+    const needCount = !(
+      Number.isFinite(detail.curriculumCount) && detail.curriculumCount > 0
+    );
     const [countRes, groupRes] = await Promise.all([
-      countCurriculum({}),
+      needCount ? countCurriculum({}) : Promise.resolve({ data: [] }),
       groupIdNum
         ? getCollegesGrouped(groupIdNum)
         : Promise.resolve({ data: [] }),
@@ -590,30 +617,48 @@ async function fetchDetail() {
 }
 
 /** ========== Lifecycle & watchers ========== */
-onMounted(async () => {
+onMounted(() => {
+  // preload master แยกอิสระ ไม่ต้องรอ
   fetchMasterOptions();
-  if (props.showModal && props.collegeId) await fetchDetail();
 });
 
 watch(
-  () => props.showModal,
-  async (open) => {
-    if (open && props.collegeId) await fetchDetail();
-  }
-);
+  [() => props.showModal, () => props.collegeId],
+  async (newVals, oldVals = []) => {
+    try {
+      const [open, id] = Array.isArray(newVals) ? newVals : [false, null];
+      const [prevOpen, prevId] = Array.isArray(oldVals) ? oldVals : [undefined, undefined];
 
-watch(
-  () => props.collegeId,
-  async (id, oldId) => {
-    if (props.showModal && id && String(id) !== String(oldId))
+      if (!open || !id) {
+        internalShow.value = false;
+        return;
+      }
+
+      const myReq = ++reqId;
+
+      // เปิดหลังโหลดเสร็จ (ถ้าต้องการโหมดนี้)
+      if (props.openAfterLoaded) {
+        internalShow.value = false;
+      } else {
+        internalShow.value = true;      // โชว์ก่อนแล้วค่อย hydrate
+        prefillFromInitial?.();         // มี initialDetail ก็นำมาโชว์ทันที
+      }
+
       await fetchDetail();
-  }
+      if (myReq !== reqId) return;      // cancel stale result
+      internalShow.value = true;        // โหลดเสร็จ → ค่อยเปิดจริง
+    } catch (err) {
+      console.error('[DetailCollegeModal] open watcher failed:', err);
+      internalShow.value = false;
+    }
+  },
+  { immediate: true }
 );
-
 /** ========== Actions ========== */
 function handleClose() {
   if (isLoading.value) return;
   props.closeModal?.(); // ปิดแบบ prop function
+  internalShow.value = false;
   emit("close"); // และส่ง event เผื่อพาเรนต์ฟัง @close
 }
 

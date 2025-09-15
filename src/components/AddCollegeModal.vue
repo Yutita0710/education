@@ -273,13 +273,16 @@ const selectedStatus = ref(statusOptions[0]);
 const props = defineProps({
   showModal: { type: Boolean, default: false },
   closeModal: { type: Function, default: () => {} },
+  optionsKey: { type: Number, default: 0 },
 });
 const isLoading = ref(false);
-
-// options data
+// ===== state options =====
+const colleges = ref([]);
+const countries = ref([]);
+const provinces = ref([]);
+const optionsLoading = ref(false);
 const countryOptions = ref([]); // [{id,name,code}]
 const provinceOptions = ref([]); // [{id,name,country_id}]
-const colleges = ref([]); // [{id,name}]
 // ประเทศ: โชว์ * เมื่อ "ยังไม่มีค่า" (ไม่ต้องสน lock ก็ได้ตามที่ต้องการ)
 const showCountryStar = computed(() => isEmpty(form.selectedCountry));
 
@@ -427,6 +430,115 @@ watch(
   }
 );
 
+async function fetchCollegesForSelect() {
+  const resp = await getCollegesPaginated({
+    page: 1,
+    limit: 10000,
+    order: "ASC",
+    sort: "id",
+    _t: Date.now(),
+  }); // _t กัน cache
+  const payload = resp?.data;
+
+  const rows =
+    (Array.isArray(payload?.data) && payload.data) ||
+    (Array.isArray(payload?.items) && payload.items) ||
+    (Array.isArray(payload?.rows) && payload.rows) ||
+    (Array.isArray(payload?.result) && payload.result) ||
+    (Array.isArray(payload) && payload) ||
+    [];
+
+  const activeRows = rows.filter((r) => Number(r?.active ?? 0) === 1);
+
+  const norm = (v) => (v == null ? "" : String(v).trim());
+  const toNum = (s) => {
+    const n = Number(s);
+    return Number.isFinite(n) ? n : null;
+  };
+  const cmpStr = (a, b) =>
+    String(a).localeCompare(String(b), "th", {
+      numeric: true,
+      sensitivity: "base",
+    });
+
+  const mapped = activeRows.map((r) => {
+    const idStr = norm(r?.id ?? r?.code ?? r?.name ?? "");
+    const groupStr = norm(r?.institute_group ?? r?.id ?? "");
+    const name =
+      r?.campus && norm(r.campus) !== ""
+        ? `${r?.name ?? ""} (${r.campus})`
+        : r?.name ?? "";
+    return {
+      id: idStr,
+      name,
+      institute_group: groupStr,
+      _idNum: toNum(idStr),
+      _groupNum: toNum(groupStr),
+      _isParent: idStr !== "" && idStr === groupStr,
+    };
+  });
+
+  mapped.sort((a, b) => {
+    let g =
+      a._groupNum != null && b._groupNum != null
+        ? a._groupNum - b._groupNum
+        : cmpStr(a.institute_group, b.institute_group);
+    if (g !== 0) return g;
+
+    if (a._isParent !== b._isParent) return a._isParent ? -1 : 1;
+
+    let i =
+      a._idNum != null && b._idNum != null
+        ? a._idNum - b._idNum
+        : cmpStr(a.id, b.id);
+    if (i !== 0) return i;
+
+    return cmpStr(a.name, b.name);
+  });
+
+  colleges.value = mapped;
+}
+
+// ===== โหลด master อื่น ๆ =====
+async function fetchMasterOptions() {
+  const [cRes, pRes] = await Promise.all([countryList(), provinceList()]);
+  countries.value = (cRes?.data?.data ?? cRes?.data ?? []).map((c) => ({
+    id: c.id ?? c.country_id ?? c.code ?? c.name,
+    name: c.name ?? c.country_name ?? c.code ?? "",
+    code: (c.code ?? "").toUpperCase(),
+  }));
+  provinces.value = (pRes?.data?.data ?? pRes?.data ?? []).map((p) => ({
+    id: p.id ?? p.province_id ?? p.name_th,
+    name: p.name_th ?? p.province_name ?? "",
+  }));
+}
+
+// ===== ดึง options ทั้งหมดพร้อมกัน =====
+async function fetchAllOptions() {
+  optionsLoading.value = true;
+  try {
+    await Promise.all([fetchCollegesForSelect(), fetchMasterOptions()]);
+  } finally {
+    optionsLoading.value = false;
+  }
+}
+
+// ✅ รีเฟรชทุกครั้งที่ "เปิดโมดัล"
+watch(
+  () => props.showModal,
+  (open, prev) => {
+    if (open) fetchAllOptions();
+  },
+  { immediate: false }
+);
+
+// ✅ และรีเฟรชเมื่อพาเรนต์ bump optionsKey (กันกรณีเปิดติด ๆ กัน)
+watch(
+  () => props.optionsKey,
+  () => {
+    if (props.showModal) fetchAllOptions();
+  }
+);
 /* =========================
  * Lifecycle
  * =======================*/
@@ -646,9 +758,8 @@ async function saveCollege() {
       showConfirmButton: false,
       timerProgressBar: true,
     });
-    clearForm();
-    // ส่ง id กลับให้พาเรนต์ แล้วปิด modal
     emit("saved", { id: newId, ...payload });
+    clearForm();
     handleClose();
   } catch (error) {
     console.error(error);
@@ -661,7 +772,6 @@ async function saveCollege() {
     isLoading.value = false;
   }
 }
-
 </script>
 
 
