@@ -1,214 +1,209 @@
 <template>
-  <div
-    v-if="showModal"
-    class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 text-gray-700"
-  >
+  <Teleport to="body">
     <div
-      class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-4xl relative overflow-y-auto"
+      v-if="showModal"
+      class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 text-gray-700"
     >
-      <!-- Close button -->
-      <button
-        @click="handleClose"
-        class="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-        aria-label="Close modal"
+      <div
+        class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-4xl relative overflow-y-auto"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          class="size-8 mr-2"
+        <!-- Close button -->
+        <button
+          @click="handleClose"
+          class="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+          aria-label="Close modal"
         >
-          <path
-            fill-rule="evenodd"
-            d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm-1.72 6.97a.75.75 0 1 0-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 1 0 1.06 1.06L12 13.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L13.06 12l1.72-1.72a.75.75 0 1 0-1.06-1.06L12 10.94l-1.72-1.72Z"
-            clip-rule="evenodd"
-          />
-        </svg>
-      </button>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            class="size-8 mr-2"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm-1.72 6.97a.75.75 0 1 0-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 1 0 1.06 1.06L12 13.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L13.06 12l1.72-1.72a.75.75 0 1 0-1.06-1.06L12 10.94l-1.72-1.72Z"
+              clip-rule="evenodd"
+            />
+          </svg>
+        </button>
 
-      <h2 class="text-xl font-bold text-center mb-4">
-        แก้ไขข้อมูลสถาบัน
-      </h2>
+        <h2 class="text-xl font-bold text-center mb-4">แก้ไขข้อมูลสถาบัน</h2>
 
-      <form @submit.prevent="saveCollege" class="space-y-4">
-        <!-- ชื่อสถาบัน (ล็อค) -->
-        <div class="mb-4">
-          <label class="block text-gray-700 mb-2">
-            <span class="flex items-center gap-1 font-bold"
-              >ชื่อสถาบัน
-            </span>
-          </label>
-          <input
-            v-model="form.name"
-            type="text"
-            placeholder="ชื่อสถาบัน"
-            readonly
-            class="bg-gray-100 w-full border-2 border-gray-200 px-4 py-3 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200 text-gray-700"
-          />
-        </div>
-
-        <!-- วิทยาเขต (แก้ได้) -->
-        <div class="mb-4">
-          <div class="flex items-center gap-2 mb-2">
-            <label class="block text-gray-700">
-              <span class="flex items-center gap-1 font-bold">วิทยาเขต</span>
+        <form @submit.prevent="saveCollege" class="space-y-4">
+          <!-- ชื่อสถาบัน (ล็อค) -->
+          <div class="mb-4">
+            <label class="block text-gray-700 mb-2">
+              <span class="flex items-center gap-1 font-bold">ชื่อสถาบัน </span>
             </label>
-          </div>
-
-          <input
-            v-model.trim="form.campus"
-            type="text"
-            :readonly="lockCampus"
-            :class="[
-              'w-full border-2 border-gray-200 px-4 py-3 rounded-xl transition-all duration-200 text-gray-700 placeholder-gray-400',
-              lockCampus
-                ? 'bg-gray-100 focus:ring-0'
-                : 'focus:ring-4 focus:ring-blue-100 focus:border-blue-500',
-            ]"
-            :placeholder="lockCampus ? 'เช่น บางเขน' : 'กรอกชื่อวิทยาเขต'"
-          />
-        </div>
-
-        <!-- กลุ่มสถาบัน (ถ้ามี) -->
-        <div class="mb-4">
-          <label class="block text-gray-700 mb-2">
-            <span class="flex items-center gap-1 font-bold"
-              >กลุ่มสถาบัน</span
-            >
-          </label>
-
-          <!-- อ่านอย่างเดียว -->
-          <div
-            v-if="lockGroup"
-            class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-gray-100 text-gray-700"
-          >
-            {{ displayGroupName }}
-          </div>
-
-          <!-- เลือกได้ -->
-          <v-select
-            v-else
-            v-model="form.selectedCollege"
-            :options="colleges"
-            label="name"
-            :reduce="(c) => String(c.id)"
-            placeholder="เลือกสถาบัน..."
-          />
-        </div>
-
-        <!-- ประเทศ -->
-        <div class="mb-4">
-          <label class="block mb-2 font-medium text-gray-900">
-            ประเทศ
-            <span v-if="showCountryStar" class="text-red-500 ml-1">*</span>
-          </label>
-
-          <!-- อ่านอย่างเดียว -->
-          <div
-            v-if="lockCountry"
-            class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-gray-100 text-gray-700"
-          >
-            {{ displayCountryName }}
-          </div>
-
-          <!-- เลือกได้ -->
-          <v-select
-            v-else
-            v-model="form.selectedCountry"
-            :options="countryOptions"
-            label="name"
-            :reduce="(c) => c.id"
-            placeholder="เลือกประเทศ"
-          />
-        </div>
-
-        <!-- จังหวัด (ไทยใช้ select / ต่างประเทศใช้ input) -->
-        <div class="mb-4">
-          <label class="block mb-2 font-medium text-gray-900">
-            จังหวัด
-            <span class="text-red-500 ml-1">*</span>
-          </label>
-
-          <!-- อ่านอย่างเดียว (มีค่าจาก API) -->
-          <div
-            v-if="lockProvince"
-            class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-gray-100 text-gray-700"
-          >
-            {{ displayProvinceName }}
-          </div>
-
-          <!-- ต้องกรอก/เลือก (ไม่มีค่าจาก API) -->
-          <div v-else class="relative">
-            <!-- ยังไม่เลือกประเทศ -->
             <input
-              v-if="!form.selectedCountry"
-              disabled
+              v-model="form.name"
               type="text"
-              class="w-full border-2 border-gray-200 px-4 py-3 rounded-xl text-gray-400 bg-gray-50"
-              placeholder="โปรดเลือกประเทศก่อน"
+              placeholder="ชื่อสถาบัน"
+              readonly
+              class="bg-gray-100 w-full border-2 border-gray-200 px-4 py-3 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200 text-gray-700"
             />
+          </div>
 
-            <!-- ประเทศ = ไทย -> ใช้ select จังหวัด -->
+          <!-- วิทยาเขต (แก้ได้) -->
+          <div class="mb-4">
+            <div class="flex items-center gap-2 mb-2">
+              <label class="block text-gray-700">
+                <span class="flex items-center gap-1 font-bold">วิทยาเขต</span>
+              </label>
+            </div>
+
+            <input
+              v-model.trim="form.campus"
+              type="text"
+              :readonly="lockCampus"
+              :class="[
+                'w-full border-2 border-gray-200 px-4 py-3 rounded-xl transition-all duration-200 text-gray-700 placeholder-gray-400',
+                lockCampus
+                  ? 'bg-gray-100 focus:ring-0'
+                  : 'focus:ring-4 focus:ring-blue-100 focus:border-blue-500',
+              ]"
+              :placeholder="lockCampus ? 'เช่น บางเขน' : 'กรอกชื่อวิทยาเขต'"
+            />
+          </div>
+
+          <!-- กลุ่มสถาบัน (ถ้ามี) -->
+          <div class="mb-4">
+            <label class="block text-gray-700 mb-2">
+              <span class="flex items-center gap-1 font-bold">กลุ่มสถาบัน</span>
+            </label>
+
+            <!-- อ่านอย่างเดียว -->
+            <div
+              v-if="lockGroup"
+              class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-gray-100 text-gray-700"
+            >
+              {{ displayGroupName }}
+            </div>
+
+            <!-- เลือกได้ -->
             <v-select
-              v-else-if="isThaiSelected"
-              v-model="form.selectedProvince"
-              :options="filteredProvinceOptions"
-              label="name"
-              :reduce="(p) => String(p.id)"
-              placeholder="เลือกจังหวัด"
-            />
-
-            <!-- ประเทศ ≠ ไทย -> ใช้ input -->
-            <input
               v-else
-              v-model.trim="form.province"
-              type="text"
-              class="w-full border-2 border-gray-200 px-4 py-3 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200 text-gray-700 placeholder-gray-400"
-              placeholder="กรอกชื่อจังหวัด/รัฐ"
+              v-model="form.selectedCollege"
+              :options="colleges"
+              label="name"
+              :reduce="(c) => String(c.id)"
+              placeholder="เลือกสถาบัน..."
             />
           </div>
-        </div>
 
-        <div class="mb-4">
-          <label class="block mb-2 font-medium text-gray-900"
-            >สถานะการใช้งาน</label
-          >
-          <Listbox
-            v-model="form.selectedStatus"
-            as="div"
-            class="relative w-full rounded-lg border px-2 py-[0.15rem]"
-          >
-            <ListboxButton
-              class="relative w-full inline-flex items-center justify-between px-3 py-2"
+          <!-- ประเทศ -->
+          <div class="mb-4">
+            <label class="block mb-2 font-medium text-gray-900">
+              ประเทศ
+              <span v-if="showCountryStar" class="text-red-500 ml-1">*</span>
+            </label>
+
+            <!-- อ่านอย่างเดียว -->
+            <div
+              v-if="lockCountry"
+              class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-gray-100 text-gray-700"
             >
-              <span class="truncate">{{
-                form.selectedStatus?.name || "สถานะการใช้งาน"
-              }}</span>
-              <ChevronUpDownIcon
-                class="w-5 h-5 text-gray-500"
-                aria-hidden="true"
+              {{ displayCountryName }}
+            </div>
+
+            <!-- เลือกได้ -->
+            <v-select
+              v-else
+              v-model="form.selectedCountry"
+              :options="countryOptions"
+              label="name"
+              :reduce="(c) => c.id"
+              placeholder="เลือกประเทศ"
+            />
+          </div>
+
+          <!-- จังหวัด (ไทยใช้ select / ต่างประเทศใช้ input) -->
+          <div class="mb-4">
+            <label class="block mb-2 font-medium text-gray-900">
+              จังหวัด
+              <span class="text-red-500 ml-1">*</span>
+            </label>
+
+            <!-- อ่านอย่างเดียว (มีค่าจาก API) -->
+            <div
+              v-if="lockProvince"
+              class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-gray-100 text-gray-700"
+            >
+              {{ displayProvinceName }}
+            </div>
+
+            <!-- ต้องกรอก/เลือก (ไม่มีค่าจาก API) -->
+            <div v-else class="relative">
+              <!-- ยังไม่เลือกประเทศ -->
+              <input
+                v-if="!form.selectedCountry"
+                disabled
+                type="text"
+                class="w-full border-2 border-gray-200 px-4 py-3 rounded-xl text-gray-400 bg-gray-50"
+                placeholder="โปรดเลือกประเทศก่อน"
               />
-            </ListboxButton>
-            <ListboxOptions
-              class="absolute z-20 mt-2 max-h-60 w-full md:w-[14rem] overflow-auto rounded-xl bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 left-0"
+
+              <!-- ประเทศ = ไทย -> ใช้ select จังหวัด -->
+              <v-select
+                v-else-if="isThaiSelected"
+                v-model="form.selectedProvince"
+                :options="filteredProvinceOptions"
+                label="name"
+                :reduce="(p) => String(p.id)"
+                placeholder="เลือกจังหวัด"
+              />
+
+              <!-- ประเทศ ≠ ไทย -> ใช้ input -->
+              <input
+                v-else
+                v-model.trim="form.province"
+                type="text"
+                class="w-full border-2 border-gray-200 px-4 py-3 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200 text-gray-700 placeholder-gray-400"
+                placeholder="กรอกชื่อจังหวัด/รัฐ"
+              />
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="block mb-2 font-medium text-gray-900"
+              >สถานะการใช้งาน</label
             >
-              <ListboxOption
-                v-for="s in statusOptions"
-                :key="s.id"
-                :value="s"
-                class="relative cursor-default select-none py-2 pl-10 pr-4 hover:bg-blue-50"
+            <Listbox
+              v-model="form.selectedStatus"
+              as="div"
+              class="relative w-full rounded-lg border px-2 py-[0.15rem]"
+            >
+              <ListboxButton
+                class="relative w-full inline-flex items-center justify-between px-3 py-2"
               >
-                <span class="block truncate">{{ s.name }}</span>
-                <span
-                  v-if="form.selectedStatus?.id === s.id"
-                  class="absolute inset-y-0 left-3 flex items-center text-blue-600"
-                  ><CheckIcon class="w-5 h-5" aria-hidden="true"
-                /></span>
-              </ListboxOption>
-            </ListboxOptions>
-          </Listbox>
-        </div>
-        <!-- <div class="flex flex-row mb-8 gap-4">
+                <span class="truncate">{{
+                  form.selectedStatus?.name || "สถานะการใช้งาน"
+                }}</span>
+                <ChevronUpDownIcon
+                  class="w-5 h-5 text-gray-500"
+                  aria-hidden="true"
+                />
+              </ListboxButton>
+              <ListboxOptions
+                class="absolute z-20 mt-2 max-h-60 w-full md:w-[14rem] overflow-auto rounded-xl bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 left-0"
+              >
+                <ListboxOption
+                  v-for="s in statusOptions"
+                  :key="s.id"
+                  :value="s"
+                  class="relative cursor-default select-none py-2 pl-10 pr-4 hover:bg-blue-50"
+                >
+                  <span class="block truncate">{{ s.name }}</span>
+                  <span
+                    v-if="form.selectedStatus?.id === s.id"
+                    class="absolute inset-y-0 left-3 flex items-center text-blue-600"
+                    ><CheckIcon class="w-5 h-5" aria-hidden="true"
+                  /></span>
+                </ListboxOption>
+              </ListboxOptions>
+            </Listbox>
+          </div>
+          <!-- <div class="flex flex-row mb-8 gap-4">
           <div class="w-full">
             <label class="block mb-2 font-medium text-gray-900"
               >เหตุผลการแก้ไขข้อมูล
@@ -250,67 +245,58 @@
             </Listbox>
           </div>
         </div> -->
-        <!-- Action -->
-        <div
-          class="flex justify-center gap-3 pt-6 border-t border-gray-200 mb-10"
-        >
-          <button
-            type="submit"
-            :disabled="isLoading"
-            class="bg-[#0085DB] hover:bg-[#0072B1] text-white px-4 py-2 rounded-full font-medium shadow hover:shadow-md transform hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center"
-          >
-            <span v-if="!isLoading" class="flex items-center">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                class="size-6 mr-2"
-              >
-                <path
-                  fill-rule="evenodd"
-                  d="M5.478 5.559A1.5 1.5 0 0 1 6.912 4.5H9A.75.75 0 0 0 9 3H6.912a3 3 0 0 0-2.868 2.118l-2.411 7.838a3 3 0 0 0-.133.882V18a3 3 0 0 0 3 3h15a3 3 0 0 0 3-3v-4.162c0-.299-.045-.596-.133-.882l-2.412-7.838A3 3 0 0 0 17.088 3H15a.75.75 0 0 0 0 1.5h2.088a1.5 1.5 0 0 1 1.434 1.059l2.213 7.191H17.89a3 3 0 0 0-2.684 1.658l-.256.513a1.5 1.5 0 0 1-1.342.829h-3.218a1.5 1.5 0 0 1-1.342-.83l-.256-.512a3 3 0 0 0-2.684-1.658H3.265l2.213-7.191Z"
-                  clip-rule="evenodd"
-                />
-                <path
-                  fill-rule="evenodd"
-                  d="M12 2.25a.75.75 0 0 1 .75.75v6.44l1.72-1.72a.75.75 0 1 1 1.06 1.06l-3 3a.75.75 0 0 1-1.06 0l-3-3a.75.75 0 0 1 1.06-1.06l1.72 1.72V3a.75.75 0 0 1 .75-.75Z"
-                  clip-rule="evenodd"
-                />
-              </svg>
-              บันทึก
-            </span>
-            <span v-else class="flex items-center">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                class="size-6 mr-2 animate-spin"
-              >
-                <path
-                  fill-rule="evenodd"
-                  d="M4.755 10.059a7.5 7.5 0 0 1 12.548-3.364l1.903 1.903h-3.183a.75.75 0 1 0 0 1.5h4.992a.75.75 0 0 0 .75-.75V4.356a.75.75 0 0 0-1.5 0v3.18l-1.9-1.9A9 9 0 0 0 3.306 9.67a.75.75 0 1 0 1.45.388Zm15.408 3.352a.75.75 0 0 0-.919.53 7.5 7.5 0 0 1-12.548 3.364l-1.902-1.903h3.183a.75.75 0 0 0 0-1.5H2.984a.75.75 0 0 0-.75.75v4.992a.75.75 0 0 0 1.5 0v-3.18l1.9 1.9a9 9 0 0 0 15.059-4.035.75.75 0 0 0-.53-.918Z"
-                  clip-rule="evenodd"
-                />
-              </svg>
-              บันทึก...
-            </span>
-          </button>
+          <!-- Action -->
+          <div class="flex justify-center gap-3 p-6 mb-10">
+            <button
+              type="submit"
+              :disabled="isLoading"
+              class="bg-[#0085DB] hover:bg-[#0072B1] text-white px-4 py-2 rounded-full font-medium shadow hover:shadow-md transform hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center"
+            >
+              <span class="flex items-center">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  class="size-6 mr-2"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M5.478 5.559A1.5 1.5 0 0 1 6.912 4.5H9A.75.75 0 0 0 9 3H6.912a3 3 0 0 0-2.868 2.118l-2.411 7.838a3 3 0 0 0-.133.882V18a3 3 0 0 0 3 3h15a3 3 0 0 0 3-3v-4.162c0-.299-.045-.596-.133-.882l-2.412-7.838A3 3 0 0 0 17.088 3H15a.75.75 0 0 0 0 1.5h2.088a1.5 1.5 0 0 1 1.434 1.059l2.213 7.191H17.89a3 3 0 0 0-2.684 1.658l-.256.513a1.5 1.5 0 0 1-1.342.829h-3.218a1.5 1.5 0 0 1-1.342-.83l-.256-.512a3 3 0 0 0-2.684-1.658H3.265l2.213-7.191Z"
+                    clip-rule="evenodd"
+                  />
+                  <path
+                    fill-rule="evenodd"
+                    d="M12 2.25a.75.75 0 0 1 .75.75v6.44l1.72-1.72a.75.75 0 1 1 1.06 1.06l-3 3a.75.75 0 0 1-1.06 0l-3-3a.75.75 0 0 1 1.06-1.06l1.72 1.72V3a.75.75 0 0 1 .75-.75Z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+                บันทึก
+              </span>
+            </button>
 
-          <button
-            type="button"
-            @click="handleClose"
-            class="bg-[#F95668] hover:bg-[#F95668]/80 text-white px-4 py-2 rounded-full font-medium shadow hover:shadow-md transform hover:-translate-y-0.5 transition-all duration-200 flex items-center"
-          >
-            ยกเลิก
-          </button>
-        </div>
-      </form>
+            <button
+              type="button"
+              @click="handleClose"
+              class="bg-[#F95668] hover:bg-[#F95668]/80 text-white px-4 py-2 rounded-full font-medium shadow hover:shadow-md transform hover:-translate-y-0.5 transition-all duration-200 flex items-center"
+            >
+              ยกเลิก
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <script setup>
-import { reactive, ref, computed, watch, onMounted } from "vue";
+import {
+  reactive,
+  ref,
+  computed,
+  watch,
+  onMounted,
+  onBeforeUnmount,
+} from "vue";
 import vSelect from "vue-select";
 import "vue-select/dist/vue-select.css";
 import Swal from "sweetalert2";
@@ -574,7 +560,7 @@ function loadFormData() {
   form.id = c.id ?? null;
   form.name = c.name ?? "";
   form.campus = c.campus ?? "";
-lockCampus.value = !!textOrNull(c.campus);
+  lockCampus.value = !!textOrNull(c.campus);
   // ---- ประเทศ ----
   const countryId = c.country ?? c.country_id ?? c.countryCode ?? null;
   form.selectedCountry = countryId ? String(countryId) : null;
@@ -646,19 +632,23 @@ async function saveCollege() {
     }
   }
 
-  const payload = {
-    name: form.name.trim(),
-    campus: form.campus ?? "",
-    country: String(form.selectedCountry),
-    institute_group: form.selectedCollege ? String(form.selectedCollege) : null,
+  const payloadRaw = {
+    name: cleanStr(form.name), // ผ่าน validation แล้ว
+    campus: textOrUndef(form.campus), // ว่าง => undefined
+    country: idOrUndef(form.selectedCountry), // ว่าง => undefined
+    institute_group: idOrUndef(form.selectedCollege), // ว่าง => undefined
     ...(isThaiSelected.value
-      ? { province: String(form.selectedProvince) }
-      : { province: textOrNull(form.province) }),
-    active: Number(form.selectedStatus?.id) === 1 ? 1 : 0,
+      ? { province: idOrUndef(form.selectedProvince) } // ใช้ id จังหวัด (string) ที่ไม่ว่าง
+      : { province: textOrUndef(form.province) }), // ต่างประเทศ: ข้อความที่ตัดแล้ว
+    active: Number(form.selectedStatus?.id) === 1 ? 1 : 0, // คง 0/1 ไว้
   };
-  Object.keys(payload).forEach(
-    (k) => payload[k] === undefined && delete payload[k]
+
+  // ลบ key ที่เป็น undefined ทิ้ง (จะไม่ส่งไปทับของเดิม)
+  Object.keys(payloadRaw).forEach(
+    (k) => payloadRaw[k] === undefined && delete payloadRaw[k]
   );
+
+  const payload = payloadRaw;
 
   isLoading.value = true;
 
@@ -689,8 +679,32 @@ async function saveCollege() {
   }
 }
 
-
-
+// ===== helpers (วางนอกฟังก์ชัน หรือบนไฟล์เดียวกัน) =====
+const cleanStr = (v) => (typeof v === "string" ? v.trim() : v);
+const textOrUndef = (v) => {
+  const s = (v ?? "").toString().trim();
+  return s ? s : undefined; // ค่าว่าง => undefined (จะถูกลบออก)
+};
+const idOrUndef = (v) => {
+  const s = (v ?? "").toString().trim();
+  return s ? s : undefined; // เอาเป็น string id ที่ไม่ว่าง
+};
+function lockBodyScroll(lock) {
+  const sbw = window.innerWidth - document.documentElement.clientWidth; // scrollbar width
+  if (lock) {
+    document.body.style.overflow = "hidden";
+    if (sbw > 0) document.body.style.paddingRight = `${sbw}px`;
+  } else {
+    document.body.style.overflow = "";
+    document.body.style.paddingRight = "";
+  }
+}
+watch(
+  () => props.showModal,
+  (open) => lockBodyScroll(open),
+  { immediate: true }
+);
+onBeforeUnmount(() => lockBodyScroll(false));
 </script>
 
 <style scoped>

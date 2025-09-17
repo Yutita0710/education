@@ -144,7 +144,7 @@
 
                 <li class="shrink-0">
                   <router-link
-                    :to="{ name: 'add-College' }"
+                    :to="{ name: 'add-college' }"
                     v-slot="{ href, navigate, isActive }"
                   >
                     <a
@@ -182,7 +182,7 @@
     </nav>
 
     <!-- Main Content -->
-    <main class="flex-grow pb-16 sm:pb-20">
+    <main>
       <router-view />
     </main>
 
@@ -200,9 +200,9 @@
 
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted, watchPostEffect } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import Breadcrumb from "./components/ฺBreadcrumb.vue";
+import Breadcrumb from "./components/Breadcrumb.vue";
 
 const router = useRouter();
 const route = useRoute();
@@ -222,6 +222,12 @@ const showNavbar = computed(
 const isAdmin = computed(() => !!token.value);
 
 console.log("isAdmin:", isAdmin);
+watch(isAdmin, (val) => {
+  if (!val) return;
+  if (route.name !== "admin-curriculum") {
+    router.replace({ name: "admin-curriculum" }); // replace เพื่อลดซ้อนทับ
+  }
+}, { immediate: false }); // หลีกเลี่ยงยิงทันทีตอน mount ถ้าไม่จำเป็น
 // ใช้ computed แทนการกำหนดค่าคงที่
 
 // ตรวจสอบว่าควรแสดง Footer หรือไม่
@@ -251,7 +257,7 @@ window.addEventListener("storage", (e) => {
 function logout() {
   localStorage.removeItem("token");
   localStorage.removeItem("username");
-localStorage.removeItem("expiry");
+  localStorage.removeItem("expiry");
   // อัพเดท reactive values
   username.value = "";
   token.value = "";
@@ -279,5 +285,15 @@ onMounted(() => {
 });
 onUnmounted(() => {
   window.removeEventListener("auth-changed", syncAuth);
+});
+
+const navRef = ref(null);
+onMounted(() => {
+  const update = () => {
+    const h = navRef.value?.offsetHeight ?? 56;
+    document.documentElement.style.setProperty("--nav-h", h + "px");
+  };
+  update();
+  window.addEventListener("resize", update);
 });
 </script>

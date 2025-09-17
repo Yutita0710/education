@@ -11,7 +11,8 @@
         Showing
         <span class="font-medium">{{ startDisplay }}</span>
         to
-        <span class="font-medium">{{ endIndex }}</span>
+        <!-- <span class="font-medium">{{ endIndex }}</span> -->
+        <span class="font-medium">{{ endDisplay }}</span>
         of
         <span class="font-medium">{{ totalDisplay }}</span>
         results
@@ -21,8 +22,8 @@
       <div class="flex items-center gap-1">
         <span class="text-gray-500">Per page:</span>
         <select
-          :value="props.perPage"
-          @change="onLimitChange($event)"
+          :value="perPageSafe"
+          @change="onLimitChange"
           class="border rounded-md px-2 py-1 text-xs sm:text-sm"
         >
           <option :value="10">10</option>
@@ -144,7 +145,8 @@
 
 
 <script setup>
-import { computed } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { computed, watch, ref } from "vue";
 
 const props = defineProps({
   currentPage: { type: Number, required: true },
@@ -162,15 +164,59 @@ const emit = defineEmits([
   "update:perPage",
 ]);
 
-const totalPages = computed(() =>
-  Math.max(1, Math.ceil(props.total / props.perPage))
+const route = useRoute();
+const router = useRouter();
+
+const ALLOWED_LIMITS = [10, 20, 50, 100];
+const DEFAULT_LIMIT = 10;
+
+
+function sanitizeLimit(x) {
+  const n = Number(x);
+  if (!Number.isFinite(n)) return DEFAULT_LIMIT;
+  if (ALLOWED_LIMITS.includes(n)) return n;
+  // clamp to nearest bound
+  if (n < ALLOWED_LIMITS[0]) return ALLOWED_LIMITS[0];
+  return ALLOWED_LIMITS[ALLOWED_LIMITS.length - 1]; // 100 สำหรับ 100000
+}
+
+function sanitizePage(p) {
+  const n = Number(p);
+  return Number.isFinite(n) && n >= 1 ? Math.floor(n) : 1;
+}
+
+watch(
+  () => route.query,
+  (q) => {
+    const safe = {
+      ...q,
+      limit: String(sanitizeLimit(q.limit)),
+      page: String(sanitizePage(q.page)),
+    };
+    // canonicalize URL ถ้าเปลี่ยน
+    if (safe.limit !== String(q.limit) || safe.page !== String(q.page)) {
+      router.replace({ query: safe });
+    }
+  },
+  { immediate: true }
 );
+
 const isFirst = computed(() => props.currentPage <= 1);
 const isLast = computed(() => props.currentPage >= totalPages.value);
+const perPageSafe = computed(() => {
+  const n = Number(props.perPage);
+  if (!Number.isFinite(n)) return DEFAULT_LIMIT;
+  if (ALLOWED_LIMITS.includes(n)) return n;
+  if (n < ALLOWED_LIMITS[0]) return ALLOWED_LIMITS[0];
+  return ALLOWED_LIMITS[ALLOWED_LIMITS.length - 1];
+});
 
-const startIndex = computed(() => (props.currentPage - 1) * props.perPage);
+const totalPages = computed(() =>
+  Math.max(1, Math.ceil(props.total / perPageSafe.value))
+);
+const startIndex = computed(() => (props.currentPage - 1) * perPageSafe.value);
 const endIndex = computed(() =>
-  Math.min(props.currentPage * props.perPage, props.total)
+  Math.min(props.currentPage * perPageSafe.value, props.total)
 );
 
 // ---- NEW: formatter ----
@@ -247,11 +293,27 @@ const goLast = () => change(totalPages.value);
 
 function onLimitChange(e) {
   const target = e.target || e.currentTarget;
-  const val = Number(target && target.value);
-  if (!Number.isFinite(val)) return;
+  const newLimit = Number(target?.value);
+  if (!Number.isFinite(newLimit) || newLimit <= 0) return;
 
-  emit("update:perPage", val);
-  emit("changePage", 1);
+  // คำนวณหน้าใหม่จาก offset ของหน้าเดิม (ยึดรายการตัวแรกที่กำลังเห็นอยู่)
+  const oldPage = Number(props.currentPage || 1);
+  const oldLimit = Number(props.perPage || 10);
+  const total = Number(props.total || 0);
+
+  const offset0 = (oldPage - 1) * oldLimit; // 0-based
+  let newPage = Math.floor(offset0 / newLimit) + 1; // 1-based
+
+  // clamp หน้าใหม่กับจำนวนหน้าตาม limit ใหม่
+  const newTotalPages = Math.max(1, Math.ceil(total / newLimit));
+  if (newPage > newTotalPages) newPage = newTotalPages;
+  if (newPage < 1) newPage = 1;
+
+  // อัปเดต perPage และ page
+  // (ถ้าพาเรนต์ยิงโหลดเมื่อใดตัวหนึ่งเปลี่ยน แนะนำรวมเป็น handler เดียวฝั่งพาเรนต์)
+  emit("update:perPage", newLimit);
+  emit("changePage", newPage);
+  emit("update:currentPage", newPage);
 }
 </script>
 

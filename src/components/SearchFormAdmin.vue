@@ -44,6 +44,7 @@
             <input
               v-model="search"
               type="text"
+              maxlength="100"
               placeholder="ค้นหาชื่อสถาบัน/ชื่อหลักสูตร/หลักสูตร"
               class="flex-1 min-w-0 bg-transparent placeholder-gray-400 text-gray-900 outline-none"
             />
@@ -215,6 +216,7 @@ import {
 import { ChevronUpDownIcon, CheckIcon } from "@heroicons/vue/24/solid";
 import vSelect from "vue-select";
 import "vue-select/dist/vue-select.css";
+import { buildSearchPayload } from "@/utils";
 
 const emit = defineEmits(["onSearch", "clear"]);
 const router = useRouter();
@@ -316,20 +318,23 @@ const status_curriculum = [
 ];
 
 // ยิงค้นหา
+const emptyToUndef = (v) => (v === "" ? undefined : v);
+
+// ใช้ alias ที่ตั้งไว้ (@utils) หรือ "@/utils/sanitize"
+
 function emitSearch() {
-  emit("onSearch", {
-    type: selected.value?.id ?? "",
-    search: (search.value || "").trim(),
-    startYear: selectedStartYear.value?.id ?? "",
-    endYear: selectedEndYear.value?.id ?? "",
-    curriculum_published:
-      curriculum_published.value?.id === null
-        ? ""
-        : String(curriculum_published.value?.id),
-    curriculum_active:
-      status.value?.id === null ? "" : String(status.value?.id),
+  const payload = buildSearchPayload({
+    type: selected.value,
+    search: search.value,
+    startYear: selectedStartYear.value,
+    endYear: selectedEndYear.value,
+    curriculum_published: curriculum_published.value,
+    curriculum_active: status.value,
   });
+  emit("onSearch", payload);
 }
+
+
 
 // debounce ช่องค้นหา
 let typingTimer = null;
@@ -442,5 +447,7 @@ onMounted(async () => {
   prefillFromUrl();
   hydrated.value = true;
 });
+
+
 </script>
 

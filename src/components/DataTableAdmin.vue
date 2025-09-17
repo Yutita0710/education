@@ -1,5 +1,5 @@
 <template>
-  <div class="text-[#707781]">
+  <div class="text-[#414957]">
     <div class="mb-2 flex justify-start">
       <p class="text-lg font-bold mb-3 sm:mb-0">
         จำนวน
@@ -16,7 +16,7 @@
     <div
       class="overflow-y-auto md:overflow-y-hidden border border-gray-300 rounded-lg"
     >
-      <table class="w-full border-collapse sm:text-base table-fixed">
+      <table class="w-full border-collapse table-fixed text-[14px]">
         <thead>
           <tr class="bg-[#E2EDFC]">
             <th
@@ -50,12 +50,12 @@
               หลักสูตรสำหรับ
             </th>
             <th
-              class="border px-2 py-[0.7rem] whitespace-nowrap w-[50px] font-bold"
+              class="border px-2 py-[0.7rem] whitespace-nowrap w-[100px] font-bold"
             >
               ปีที่เริ่มต้น
             </th>
             <th
-              class="border px-2 py-[0.7rem] whitespace-nowrap w-[50px] font-bold"
+              class="border px-2 py-[0.7rem] whitespace-nowrap w-[100px] font-bold"
             >
               ปีที่สิ้นสุด
             </th>
@@ -76,21 +76,30 @@
             </th>
           </tr>
         </thead>
+        <div v-if="!lookupReady" class="loading-overlay">
+          <div class="loader">
+            <div class="circle" tabindex="0"></div>
+            <div class="circle" tabindex="0"></div>
+            <div class="circle" tabindex="0"></div>
+            <div class="circle" tabindex="0"></div>
+            <div class="circle" tabindex="0"></div>
+          </div>
+        </div>
 
-        <tbody v-if="Array.isArray(curriculums) && curriculums.length > 0">
+        <tbody v-else-if="Array.isArray(curriculums) && curriculums.length > 0">
           <tr
             v-for="(item, index) in curriculums"
             :key="item.id"
             :class="[
               'hover:bg-gray-50',
-              item.college.active === 0 || item.active === 0
-                ? 'bg-gray-100 text-gray-400'
+              item.college?.active === 0 || item.active === 0
+                ? 'bg-gray-100 text-[#A0A4AB]'
                 : '',
             ]"
           >
             <!-- ลำดับ -->
             <td class="border px-2 py-1 text-center">
-              {{ meta.per_page * (meta.current_page - 1) + index + 1 }}
+              {{ rowNo(index) }}
             </td>
 
             <!-- ชื่อสถาบัน -->
@@ -133,6 +142,12 @@
             <!-- คำอธิบายหลักสูตร -->
             <td class="border px-2 py-1">
               {{ item.description || "" }}
+              <span
+                v-if="Number(item.is_section_33) === 1"
+                class="inline-flex items-center text-xs rounded-full p-1 bg-[#F8B15D]/10 text-[#F8B15D]"
+              >
+                33
+              </span>
             </td>
 
             <!-- ระดับการศึกษา -->
@@ -154,7 +169,9 @@
             </td>
 
             <!-- หมายเหตุ -->
-            <td class="border px-2 py-1 break-words">{{ item.remark || "" }}</td>
+            <td class="border px-2 py-1 break-words">
+              {{ item.remark || "" }}
+            </td>
 
             <!-- สถานะ -->
             <td class="border px-2 py-1 text-center">
@@ -211,7 +228,10 @@
                 </div>
 
                 <!-- Edit -->
-                <div class="relative inline-block group">
+                <div
+                  v-if="canEditRow(item)"
+                  class="relative inline-block group"
+                >
                   <button
                     @click.stop="openEditModal(item)"
                     :aria-describedby="`tt-edit-${item.id}`"
@@ -278,13 +298,21 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, computed } from "vue"; // ✅ เพิ่ม onMounted
+import { ref, onMounted, nextTick, computed } from "vue";
 import EditCurriculumModal from "./EditCurriculumModal.vue";
-import DetailCurriculumModal from "./DetailCurriculumModal.vue"; // ✅ ถ้าใช้โมดัลรายละเอียด
-import { getTypes } from "@/services/apiService";
+import DetailCurriculumModal from "./DetailCurriculumModal.vue";
+import { useTypeLookup } from "@/composables/useLookups";
+
+const {
+  ready: lookupReady,
+  typeLookup,
+  ensureReady: ensureTypeLookupReady,
+} = useTypeLookup();
+onMounted(async () => {
+  await ensureTypeLookupReady();
+});
 
 const emit = defineEmits(["refresh", "refreshData"]);
-// props: เปลี่ยน default เป็น null
 const props = defineProps({
   curriculums: { type: Array, required: true },
   meta: { type: Object, required: true },
@@ -293,114 +321,65 @@ const props = defineProps({
   loading: { type: Boolean, default: false },
 });
 
-/// ---------------------- Edit modal ----------------------
 const showEditModal = ref(false);
 const selectedCurriculum = ref(null);
-
-function openEditModal(item) {
-  selectedCurriculum.value = { ...item };
-  showEditModal.value = true;
-}
-
-// ✅ เรียกจาก DetailCurriculumModal
 function openEditFromDetail(curr) {
   showDetailModal.value = false;
   selectedCurriculum.value = { ...(curr || detailCurriculum.value || {}) };
   showEditModal.value = true;
 }
-
 function closeEditModal() {
   showEditModal.value = false;
   selectedCurriculum.value = null;
 }
 
 async function handleEditSaved(e) {
-  // ปิด Edit ก่อน
   showEditModal.value = false;
-
-  // หา id ที่เชื่อถือได้
   const id =
     e?.id ?? selectedCurriculum.value?.id ?? detailCurriculum.value?.id ?? null;
-
-  // รวม payload ล่าสุดกลับเข้า detailCurriculum
   detailCurriculum.value = {
     ...(detailCurriculum.value || {}),
     ...(selectedCurriculum.value || {}),
-    ...(e?.atch || {}), // payload ที่ emit มาจาก EditCurriculumModal
+    ...(e?.atch || {}),
     id,
   };
-
-  // ให้ DOM อัปเดตก่อน แล้วค่อยเปิด Detail (กันอาการกะพริบ/ซ้อน)
   await nextTick();
   showDetailModal.value = true;
-
-  // แจ้งให้พาเรนต์รีเฟรชตาราง ถ้าต้องการ
   emit("refreshData", e);
   emit("refresh", e);
 }
-// ---------------------- Detail modal ----------------------
+
 const showDetailModal = ref(false);
 const detailCurriculum = ref(null);
-function openDetailModal(item) {
+
+async function openDetailModal(item) {
+  await ensureTypeLookupReady();
   detailCurriculum.value = { ...item };
   showDetailModal.value = true;
 }
+
+async function openEditModal(item) {
+  await ensureTypeLookupReady();
+  selectedCurriculum.value = { ...item };
+  showEditModal.value = true;
+}
+
 function closeDetailModal() {
   showDetailModal.value = false;
   detailCurriculum.value = null;
 }
 
-// ---------------------- ประเภทสมาชิก (mapping) ----------------------
 const TYPE_ALL_NAME = "สมาชิกทุกประเภท";
 const ALL_SET = new Set([1, 2, 3]);
-const typeLookup = ref({});
-async function loadTypeLookup() {
-  try {
-    const res = await getTypes();
-    const list = Array.isArray(res?.data?.data) ? res.data.data : [];
-    const active = list.filter((t) => Number(t.active) === 1);
-    typeLookup.value = Object.fromEntries(
-      active.map((t) => [Number(t.id), String(t.type_name)])
-    );
-  } catch (e) {
-    console.error("getTypes error:", e);
-  }
-}
-onMounted(async () => {
-  await loadTypeLookup();
-  console.log("typeLookup:", typeLookup.value); // {1: 'สมาชิกสามัญ', 2: 'สมาชิกวิสามัญ', 3: 'สมาชิกสมทบ', ...}
-});
-// ✅ เรียกหลัง import แล้ว
-const typeNameToId = computed(() => {
-  const m = new Map();
-  for (const [id, name] of Object.entries(typeLookup.value)) {
-    if (name) m.set(String(name).trim(), Number(id));
-  }
-  return m;
-});
 
-// id ของประเภท "จริง" ทั้งหมด (ยกเว้น "สมาชิกทุกประเภท")
-const realTypeIds = computed(() =>
-  Object.entries(typeLookup.value)
-    .filter(([, name]) => String(name).trim() !== TYPE_ALL_NAME)
-    .map(([id]) => Number(id))
-    .filter(Number.isFinite)
-);
-
-function normalizeIds(val) {
-  if (Array.isArray(val))
-    return val.map((n) => Number(n)).filter(Number.isFinite);
-  if (typeof val === "string")
-    return val
-      .split(/[,\uFF0C\u3001\s]+/)
-      .map((s) => Number(s.trim()))
-      .filter(Number.isFinite);
-  if (typeof val === "number") return [val];
-  return [];
+function rowNo(i) {
+  const per = Number(props.meta?.per_page ?? props.meta?.limit ?? 10) || 10;
+  const page = Number(props.meta?.current_page ?? 1) || 1;
+  return per * (page - 1) + i + 1;
 }
 
 function renderTypes(item) {
-  // 1) ดึง raw จากหลายฟิลด์ที่เป็นไปได้ (ตามโครงสร้างระบบคุณ)
+  if (!lookupReady.value) return "-";
   const raw =
     (Array.isArray(item?.types) && item.types.length && item.types) ||
     (Array.isArray(item?.type_ids) && item.type_ids.length && item.type_ids) ||
@@ -408,7 +387,6 @@ function renderTypes(item) {
     item?.type ||
     null;
 
-  // 2) แปลงให้กลายเป็น array ของตัวเลข ids
   const toIds = (v) => {
     const out = [];
     const pushId = (x) => {
@@ -419,18 +397,12 @@ function renderTypes(item) {
       for (const it of v) {
         if (it && typeof it === "object" && it.id != null) pushId(it.id);
         else if (typeof it === "number") pushId(it);
-        else if (typeof it === "string") {
-          // สตริงเลขเดี่ยว
-          if (/^-?\d+(\.\d+)?$/.test(it.trim())) pushId(it.trim());
-          else {
-            // กรณีเป็นชื่อ (เช่น “สมาชิกวิสามัญ”) ปล่อยผ่านไว้ เพราะกรณีนี้ของคุณส่งมาเป็นตัวเลขอยู่แล้ว
-          }
-        }
+        else if (typeof it === "string" && /^-?\d+(\.\d+)?$/.test(it.trim()))
+          pushId(it.trim());
       }
       return out;
     }
     if (typeof v === "string") {
-      // ✅ เคสหลักของคุณ: "1,2,3" / "2,3"
       return v
         .split(/[,\uFF0C\u3001\s]+/)
         .map((s) => Number(s.trim()))
@@ -441,12 +413,9 @@ function renderTypes(item) {
   };
 
   let ids = toIds(raw);
-
-  // 3) dedupe รักษาลำดับ
   const seen = new Set();
   ids = ids.filter((n) => (seen.has(n) ? false : (seen.add(n), true)));
 
-  // 4) ถ้าเป็นชุดครบทุกประเภท {1,2,3} → แสดง "สมาชิกทุกประเภท"
   if (
     ids.length &&
     ALL_SET.size === ids.length &&
@@ -455,20 +424,27 @@ function renderTypes(item) {
     return TYPE_ALL_NAME;
   }
 
-  // 5) map id -> name จาก lookup (โหลดจาก getTypes)
   const nameById = typeLookup.value || {};
   const names = ids
     .map((id) => nameById[id])
     .filter((s) => typeof s === "string" && s.trim().length);
 
-  // 6) ถ้า lookup ยังไม่มา (หรือบาง id ยังหาชื่อไม่เจอ) ให้ fallback เป็น id
   if (names.length === 0) {
-    // ถ้า raw เดิมเป็น string (เช่น "2,3") ให้แสดงมันก่อนเป็น fallback
     if (typeof raw === "string" && raw.trim()) return raw.trim();
-    // ไม่งั้นก็แสดงเป็น id คั่น comma
     return ids.join(", ");
   }
-
   return names.join(", ");
 }
+// helpers
+const isBlank = (v) => v == null || String(v).trim() === "";
+
+// ใช้ได้กับแต่ละแถว
+const canEditRow = (row) => {
+  if (!row) return false; // กัน null/undefined
+  const s33 = Number(row.is_section_33) === 1;
+  const specificBlank = isBlank(row.specific_no);
+  if (s33 === true && specificBlank === true) return false; // ม.33 และ specific_no ว่าง)
+  if (s33 === false && specificBlank === true) return true; // ไม่ม.33 และ specific_no ว่าง
+};
 </script>
+

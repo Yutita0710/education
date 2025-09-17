@@ -25,14 +25,14 @@
   border-bottom-width: 1px;
   background-color: white;
   position: relative;
-  z-index: 10;
+  z-index: 20!important;
 }
 
 .vs__dropdown-menu {
   @apply mt-1 rounded-lg shadow-md border border-gray-200;
   margin-top: 0.25rem;
   border-top-width: 1px;
-  z-index: 20;
+  z-index: 30!important;
   height: 300px;
   overflow-y: scroll;
 }

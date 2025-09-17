@@ -1,7 +1,10 @@
 <template>
-  <div class="p-6 text-gray-700 space-y-4">
+  <div class="p-6 text-gray-700 space-y-4 text-[#414957]">
     <div class="w-auto">
-      <SearchCollegeAdmin @update:filters="onFiltersUpdate" />
+      <SearchCollegeAdmin
+        @update:filters="onFiltersUpdate"
+        @reset="onResetFilters"
+      />
     </div>
 
     <!-- ตาราง -->
@@ -42,7 +45,7 @@
           class="table-fixed w-full border-collapse border border-gray-300 text-sm sm:text-base min-w-0"
         >
           <thead>
-            <tr class="bg-[#E2EDFC] font-bold">
+            <tr class="bg-[#E2EDFC]">
               <th
                 class="border px-2 py-[0.7rem] font-bold whitespace-nowrap w-[40px]"
               >
@@ -65,30 +68,30 @@
                 จังหวัด
               </th>
               <th
-                class="border px-2 py-[0.7rem] font-bold whitespace-nowrap w-[50px]"
+                class="border px-2 py-[0.7rem] font-bold whitespace-nowrap w-[100px]"
               >
                 จำนวนหลักสูตร
               </th>
               <th
-                class="border px-2 py-[0.7rem] font-bold whitespace-nowrap w-[50px]"
+                class="border px-2 py-[0.7rem] font-bold whitespace-nowrap w-[100px]"
               >
                 สถานะการใช้งาน
               </th>
               <th
-                class="border px-2 py-[0.7rem] font-bold whitespace-nowrap w-[50px]"
+                class="border px-2 py-[0.7rem] font-bold whitespace-nowrap w-[100px]"
               >
                 จัดการ
               </th>
             </tr>
           </thead>
 
-          <tbody v-if="Array.isArray(colleges) && colleges.length > 0">
+          <tbody v-if="colleges.length">
             <tr
               v-for="item in colleges"
               :key="item.id"
               :class="[
                 'hover:bg-gray-50',
-                item.active === 0 ? 'bg-gray-100 text-gray-400' : '',
+                item.active === 0 ? 'bg-gray-100 text-[#A0A4AB]' : '',
               ]"
             >
               <td class="border px-2 py-1 text-center">
@@ -102,7 +105,7 @@
               <td class="border px-2 py-1 break-words">
                 {{ item.provinceName }}
               </td>
-              <td class="border px-2 py-1 break-words cursor-pointer">
+              <td class="border px-2 py-1 break-words">
                 {{ item.curriculumCount || 0 }}
               </td>
 
@@ -110,8 +113,11 @@
                 class="border px-2 py-1 text-center items-center justify-center"
               >
                 <span
-                  :class="item.active ? 'bg-[#09C97F1A] text-[#09C97F]' : 'bg-[#FB977D1A] text-[#FB977D]'"
-
+                  :class="
+                    item.active
+                      ? 'bg-[#09C97F1A] text-[#09C97F]'
+                      : 'bg-[#FB977D1A] text-[#FB977D]'
+                  "
                   class="rounded-full px-3 py-1 text-xs readonly font-medium"
                 >
                   {{ item.active === 1 ? "ใช้งาน" : "ไม่ใช้งาน" }}
@@ -123,6 +129,8 @@
                   <!-- View Detail -->
                   <div class="relative inline-block group">
                     <button
+                      @mouseenter="prefetchDetail(item.id)"
+                      @focus="prefetchDetail(item.id)"
                       @click.stop="openDetailOnly(item)"
                       :aria-describedby="`tt-view-${item.id}`"
                       class="inline-flex items-center bg-[#0085DB] text-white w-10 h-10 rounded-full hover:bg-blue-500 transition justify-center"
@@ -241,7 +249,7 @@
       :closeModal="closeCollegeDetailModal"
       :collegeId="selectedCollegeDetail?.id ?? null"
       :initial-detail="selectedCollegeDetail"
-      :open-after-loaded="true"
+      :open-after-loaded="false"
       @close="closeCollegeDetailModal"
       @request-edit="onDetailRequestEdit"
       @saved="handleCollegeEdited"
@@ -260,13 +268,13 @@
   </div>
 </template>
 <script setup>
-import { ref, reactive, computed, watch, nextTick } from "vue";
+import { ref, reactive, computed, watch, nextTick, onMounted } from "vue";
+import { useLookups } from "@/composables/useLookups";
 import { useRoute, useRouter } from "vue-router";
 import {
   getCollegesPaginated,
   countCurriculum,
-  provinceList,
-  countryList,
+  getCollegesById,
 } from "@/services/apiService";
 
 import SearchCollegeAdmin from "@/components/SearchCollegeAdmin.vue";
@@ -274,18 +282,23 @@ import PaginationBar from "@/components/PaginationBar.vue";
 import AddCollegeModal from "@/components/AddCollegeModal.vue";
 import EditCollegeModal from "@/components/EditCollegeModal.vue";
 import DetailCollegeModal from "@/components/DetailCollegeModal.vue";
+const { ensureLoaded, displayCountry, displayProvince } = useLookups();
 
+onMounted(() => {
+  // fire-and-forget: ข้อมูลมาเมื่อไร ตารางจะอัปเดตเอง (reactive)
+  ensureLoaded();
+});
 const route = useRoute();
 const router = useRouter();
 
 /* ===================== Modal States ===================== */
-const showCollegeModal = ref(false);        // Add
-const showCollegeDetailModal = ref(false);  // Detail
-const showEditModal = ref(false);           // Edit
-
-const selectedCollege = ref(null);          // ใช้กับ Edit
-const selectedCollegeDetail = ref(null);    // ใช้กับ Detail
-const detailKey = ref(0);                   // force remount detail
+const showCollegeModal = ref(false); // Add
+const showCollegeDetailModal = ref(false); // Detail
+const showEditModal = ref(false); // Edit
+const detailCache = new Map();
+const selectedCollege = ref(null); // ใช้กับ Edit
+const selectedCollegeDetail = ref(null); // ใช้กับ Detail
+const detailKey = ref(0); // force remount detail
 
 const addOptionsKey = ref(0);
 
@@ -338,46 +351,14 @@ async function toEdit(payload) {
   });
 }
 
-/* ===================== Masters (ประเทศ/จังหวัด) ===================== */
-// ✅ แก้: ต้องมีค่าเริ่มต้น byId: Map()
-const countriesRef = ref({ byId: new Map() });
-const provincesRef = ref({ byId: new Map() });
-const mastersLoaded = ref(false);
-
-function seedIdNameMap(target, list = []) {
-  for (const it of list) {
-    const id =
-      it?.id ?? it?.country_id ?? it?.province_id ?? it?.value ?? it?.code ?? it?.pk;
-    const name =
-      it?.name_th ?? it?.thai_name ?? it?.nameTh ?? it?.name ?? it?.label ?? it?.title;
-    if (id != null && name) {
-      const keyNum = Number(id);
-      target.set(Number.isFinite(keyNum) ? keyNum : String(id), String(name));
-    }
-  }
-}
-
-async function loadMastersOnce() {
-  if (mastersLoaded.value) return;
-  try {
-    const [provRes, countryRes] = await Promise.all([provinceList(), countryList()]);
-    const provinces = provRes?.data?.data ?? provRes?.data ?? [];
-    const countries = countryRes?.data?.data ?? countryRes?.data ?? [];
-    provincesRef.value.byId.clear();
-    countriesRef.value.byId.clear();
-    seedIdNameMap(provincesRef.value.byId, provinces);
-    seedIdNameMap(countriesRef.value.byId, countries);
-  } finally {
-    mastersLoaded.value = true; // กันโหลดซ้ำ ถึงแม้ error
-  }
-}
-
 /* ===================== Count Curriculums ===================== */
 const countsRef = ref({ byId: new Map(), byName: new Map() });
 const countsLoaded = ref(false);
 
 function normalizeNameKey(s) {
-  return String(s ?? "").trim().toLowerCase();
+  return String(s ?? "")
+    .trim()
+    .toLowerCase();
 }
 function hydrateCounts(list = []) {
   countsRef.value.byId.clear();
@@ -416,10 +397,34 @@ const meta = ref({
   last_page: 1,
 });
 
-const colleges = computed(() => rows.value);
-const totalItems = computed(() => Number(meta.value?.total ?? rows.value.length));
+const colleges = computed(() =>
+  (rows.value || []).map((c) => ({
+    ...c,
+    countryName: displayCountry(c.country ?? c.country_id),
+    provinceName: displayProvince(c.province ?? c.province_id),
+  }))
+);
+const totalItems = computed(() =>
+  Number(meta.value?.total ?? rows.value.length)
+);
 
 /* ===================== Helpers ===================== */
+
+async function prefetchDetail(id) {
+  if (!id) return;
+  if (detailCache.has(id)) return;
+  try {
+    const p = getCollegesById(id); // fire-and-forget
+    detailCache.set(id, p);
+    await p; // รอให้สำเร็จสักรอบ (จะได้ warm cache)
+  } catch (e) {
+    // ถ้าล้มเหลว ให้ลบ cache ทิ้ง จะได้ลองใหม่ครั้งหน้าโดยไม่ error ค้าง
+    detailCache.delete(id);
+    // ไม่ต้อง throw ออกไป ป้องกัน Unhandled error ใน console
+    // console.debug("prefetch failed (ignored):", e);
+  }
+}
+
 const toInt = (v, d) => {
   const n = parseInt(v, 10);
   return Number.isFinite(n) ? n : d;
@@ -427,30 +432,16 @@ const toInt = (v, d) => {
 const toOpt = (v) => {
   if (v == null) return "";
   const s = String(v).trim();
-  return s === "" || s.toLowerCase() === "undefined" || s.toLowerCase() === "null" ? "" : s;
+  return s === "" ||
+    s.toLowerCase() === "undefined" ||
+    s.toLowerCase() === "null"
+    ? ""
+    : s;
 };
 const isNumericId = (v) =>
   typeof v === "number" || (typeof v === "string" && /^\d+$/.test(v.trim()));
 
-function resolveName(raw, mapRef) {
-  if (raw == null) return "";
-  if (typeof raw === "object")
-    return raw.name_th ?? raw.nameTh ?? raw.name ?? raw.label ?? "";
-  if (isNumericId(raw)) {
-    const keyNum = Number(raw);
-    const keyStr = String(raw);
-    return mapRef.byId.get(keyNum) ?? mapRef.byId.get(keyStr) ?? "";
-  }
-  return String(raw);
-}
-
 function mapCollege(c = {}, counts = countsRef.value) {
-  const countryRaw = c.countryName ?? c.country_name ?? c.country;
-  const provinceRaw = c.provinceName ?? c.province_name ?? c.province;
-
-  const countryName = resolveName(countryRaw, countriesRef.value);
-  const provinceName = resolveName(provinceRaw, provincesRef.value);
-
   const id = Number(c.id ?? c.college_id ?? c.collegeId);
   const nameKey = normalizeNameKey(c.name ?? c.college_name ?? "");
 
@@ -472,10 +463,28 @@ function mapCollege(c = {}, counts = countsRef.value) {
 
   return {
     ...c,
-    countryName: countryName || " ", // กันคอลัมน์หด
-    provinceName: provinceName || " ",
+    countryName: displayCountry(
+      c.countryName ?? c.country_name ?? c.country ?? c.country_id,
+      " "
+    ),
+    provinceName: displayProvince(
+      c.provinceName ?? c.province_name ?? c.province ?? c.province_id,
+      " "
+    ),
     curriculumCount,
   };
+}
+
+async function onResetFilters() {
+  // ตั้ง state กลับค่าเริ่มต้น (กันซิงก์ระหว่างรอดู URL)
+  Object.assign(state, { ...DEFAULTS });
+
+  // ล้าง query ทั้งหมดบน URL เช่น ?page=2&limit=10&... → หายเกลี้ยง
+  await router.replace({ query: {} });
+
+  // watcher(route.fullPath) ของคุณจะยิงเองอยู่แล้ว
+  // แต่จะเรียกเองไว้อีกก็ได้ (ไม่จำเป็น)
+  fetchData();
 }
 
 /* ===================== URL Sync ===================== */
@@ -505,7 +514,7 @@ function buildQuery(partial = {}) {
   if (allDefault) return {};
   const q = {};
   if (s.page !== DEFAULTS.page) q.page = s.page;
-  q.limit = s.limit;
+  if (s.limit !== DEFAULTS.limit) q.limit = s.limit;
   if (s.sort !== DEFAULTS.sort) q.sort = s.sort;
   if (s.order !== DEFAULTS.order) q.order = s.order;
   if (s.search) q.search = s.search;
@@ -532,7 +541,6 @@ async function fetchData() {
   try {
     isLoading.value = true;
 
-    if (!mastersLoaded.value) await loadMastersOnce();
     if (!countsLoaded.value) {
       try {
         const cnt = await countCurriculum();
@@ -627,14 +635,6 @@ function openEditFromList(item) {
   toEdit(item);
 }
 
-// (ยังคงไว้เผื่อที่อื่นเรียก)
-function openDetailCollegeModal(item) {
-  toDetail(item?.id ?? item);
-}
-function openEditcollegeModal(item) {
-  toEdit(item);
-}
-
 function closeCollegeModal() {
   showCollegeModal.value = false;
 }
@@ -645,8 +645,8 @@ function closeCollegeDetailModal() {
 
 /* ====== callbacks หลังบันทึก/เพิ่ม ====== */
 async function handleCollegeAdded(payload) {
-  await toDetail(payload?.id ?? payload);  // ไปดูรายละเอียดตัวที่เพิ่งเพิ่ม
-  fetchData();                             // รีเฟรชตาราง
+  await toDetail(payload?.id ?? payload); // ไปดูรายละเอียดตัวที่เพิ่งเพิ่ม
+  fetchData(); // รีเฟรชตาราง
 }
 
 async function handleCollegeEdited(payload) {
@@ -673,7 +673,7 @@ watch(
     syncFromUrl();
     fetchData();
   },
-  { immediate: true }
+  { immediate: true } // ยิงโหลดครั้งแรก
 );
 </script>
 

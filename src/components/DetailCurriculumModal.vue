@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="showModal"
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 text-gray-700"
+    class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 text-gray-700"
   >
     <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-4xl relative">
       <!-- แถวหัวข้อ + ปุ่ม -->
@@ -10,12 +10,13 @@
         <div></div>
 
         <!-- คอลัมน์กลาง: หัวข้ออยู่กึ่งกลางจริง -->
-        <h2 class="text-xl font-bold text-center">รายละเอียดหลักสูตร</h2>
+        <h2 class="text-[17px] font-bold text-center">รายละเอียดหลักสูตร</h2>
 
         <!-- คอลัมน์ขวา: ปุ่มสองอันชิดขวาและวางติดกัน -->
         <div class="justify-self-end flex items-center gap-2">
           <!-- ปุ่มดินสอ -->
           <button
+            v-if="canEdit"
             @click.stop="onEditClick"
             :aria-describedby="detail?.id ? `tt-edit-${detail.id}` : 'tt-edit'"
             type="button"
@@ -63,8 +64,11 @@
       </div>
 
       <!-- Loading / Error -->
-      <div v-if="isLoading" class="py-8 text-center text-gray-500">
-        กำลังโหลดข้อมูล...
+      <div v-if="isLoading" class="space-y-4 animate-pulse">
+        <div class="h-4 bg-gray-200 rounded w-1/3"></div>
+        <div class="h-4 bg-gray-200 rounded w-2/3"></div>
+        <div class="h-4 bg-gray-200 rounded w-1/4"></div>
+        <div class="h-4 bg-gray-200 rounded w-1/2"></div>
       </div>
       <div v-else-if="loadError" class="py-6 text-center">
         <p class="text-red-600">ไม่สามารถดึงข้อมูลได้: {{ loadError }}</p>
@@ -74,81 +78,105 @@
       <div class="px-14 space-y-6 py-10" v-else>
         <!-- 2 คอลัมน์ -->
         <dl class="grid grid-cols-[210px_minmax(0,1fr)] gap-x-6 gap-y-3">
-          <dt class="text-gray-600 font-semibold whitespace-nowrap">
+          <template v-if="detail?.specific_no">
+            <dt
+              class="text-gray-600 font-semibold whitespace-nowrap text-[15px]"
+            >
+              หลักสูตรเฉพาะสมาชิก
+            </dt>
+            <dd
+              class="text-gray-900 min-w-0 whitespace-pre-wrap break-words hyphens-auto"
+            >
+              {{ detail.specific_no }}
+            </dd>
+          </template>
+          <dt class="text-gray-600 font-semibold whitespace-nowrap text-[15px]">
             ชื่อสถาบัน
           </dt>
           <dd
-            class="text-gray-900 min-w-0 whitespace-normal break-words hyphens-auto"
+            class="text-gray-900 min-w-0 whitespace-normal break-words hyphens-auto text-[14px]"
           >
-            {{ collegeName }}
+            {{ safeText(collegeName) }}
           </dd>
 
-          <dt class="text-gray-600 font-semibold whitespace-nowrap">
+          <dt class="text-gray-600 font-semibold whitespace-nowrap text-[15px]">
             ชื่อหลักสูตร
           </dt>
           <dd
-            class="text-gray-900 min-w-0 whitespace-normal break-words hyphens-auto"
+            class="text-gray-900 min-w-0 whitespace-normal break-words hyphens-auto text-[14px]"
           >
-            {{ detail.name ?? "-" }}
+            {{ safeText(detail.name) }}
           </dd>
 
-          <dt class="text-gray-600 font-semibold whitespace-nowrap">
+          <dt class="text-gray-600 font-semibold whitespace-nowrap text-[15px]">
             หลักสูตร
           </dt>
           <dd
-            class="text-gray-900 min-w-0 whitespace-normal break-words hyphens-auto"
+            class="text-gray-900 min-w-0 whitespace-normal break-words hyphens-auto text-[14px]"
           >
-            {{ description }}
+            {{ safeText(description) }}
           </dd>
 
-          <dt class="text-gray-600 font-semibold whitespace-nowrap">
+          <dt class="text-gray-600 font-semibold whitespace-nowrap text-[15px]">
             ระดับการศึกษา
           </dt>
           <dd
-            class="text-gray-900 min-w-0 whitespace-normal break-words hyphens-auto"
+            class="text-gray-900 min-w-0 whitespace-normal break-words hyphens-auto text-[14px]"
           >
-            {{ degreeName }}
+            {{ safeText(degreeName) }}
           </dd>
 
-          <dt class="text-gray-600 font-semibold whitespace-nowrap">
+          <dt class="text-gray-600 font-semibold whitespace-nowrap text-[15px]">
             หลักสูตรสำหรับ
           </dt>
           <dd
-            class="text-gray-900 min-w-0 whitespace-normal break-words hyphens-auto"
+            class="text-gray-900 min-w-0 whitespace-normal break-words hyphens-auto text-[14px]"
           >
-            {{ typeNames }}
+            {{ safeText(typeNames) }}
           </dd>
 
-          <dt class="text-gray-600 font-semibold whitespace-nowrap">
+          <dt class="text-gray-600 font-semibold whitespace-nowrap text-[15px]">
             รายละเอียด
           </dt>
           <dd
             class="text-gray-900 min-w-0 whitespace-pre-wrap break-words hyphens-auto"
           >
-            {{ detail.remark ?? "-" }}
+            {{ safeText(detail?.remark) }}
           </dd>
+          <template v-if="Number(detail?.is_section_33 ?? 0) === 1">
+            <dt
+              class="text-gray-600 font-semibold whitespace-nowrap text-[15px]"
+            >
+              หมายเหตุเพิ่มเติม
+            </dt>
+            <dd
+              class="text-gray-900 min-w-0 whitespace-pre-wrap break-words hyphens-auto"
+            >
+              ประกาศสภาวิชาชีพบัญชี ฉบับที่ 33/2549
+            </dd>
+          </template>
         </dl>
 
         <!-- มติ/วันที่ (4 คอลัมน์) -->
         <dl
           class="mt-4 grid grid-cols-[210px_minmax(0,1fr)_210px_minmax(0,1fr)] gap-x-6 gap-y-3"
         >
-          <dt class="text-gray-600 font-semibold whitespace-nowrap">
+          <dt class="text-gray-600 font-semibold whitespace-nowrap text-[15px]">
             มติการประชุมครั้งที่
           </dt>
           <dd
-            class="text-gray-900 min-w-0 whitespace-normal break-words hyphens-auto"
+            class="text-gray-900 min-w-0 whitespace-normal break-words hyphens-auto text-[14px]"
           >
-            {{ meetingNo }}
+            {{ safeText(meetingNo) }}
           </dd>
 
-          <dt class="text-gray-600 font-semibold whitespace-nowrap">
+          <dt class="text-gray-600 font-semibold whitespace-nowrap text-[15px]">
             วันที่ประชุม
           </dt>
           <dd
-            class="text-gray-900 min-w-0 whitespace-normal break-words hyphens-auto"
+            class="text-gray-900 min-w-0 whitespace-normal break-words hyphens-auto text-[14px]"
           >
-            {{ meetingDateTH }}
+            {{ safeText(meetingDateTH) }}
           </dd>
         </dl>
 
@@ -156,28 +184,28 @@
         <dl
           class="mt-2 grid grid-cols-[210px_minmax(0,1fr)_210px_minmax(0,1fr)] gap-x-6 gap-y-3"
         >
-          <dt class="text-gray-600 font-semibold whitespace-nowrap">
+          <dt class="text-gray-600 font-semibold whitespace-nowrap text-[15px]">
             ปีที่เริ่มต้น (พ.ศ.)
           </dt>
           <dd
-            class="text-gray-900 min-w-0 whitespace-normal break-words hyphens-auto"
+            class="text-gray-900 min-w-0 whitespace-normal break-words hyphens-auto text-[14px]"
           >
-            {{ startYear }}
+            {{ safeYear(startYear) }}
           </dd>
 
-          <dt class="text-gray-600 font-semibold whitespace-nowrap">
+          <dt class="text-gray-600 font-semibold whitespace-nowrap text-[15px]">
             ปีที่สิ้นสุด (พ.ศ.)
           </dt>
           <dd
-            class="text-gray-900 min-w-0 whitespace-normal break-words hyphens-auto"
+            class="text-gray-900 min-w-0 whitespace-normal break-words hyphens-auto text-[14px]"
           >
-            {{ endYear }}
+            {{ safeYear(endYear) }}
           </dd>
         </dl>
 
         <!-- ป้ายสถานะ (2 คอลัมน์) -->
         <dl class="mt-2 grid grid-cols-[210px_minmax(0,1fr)] gap-x-6 gap-y-3">
-          <dt class="text-gray-600 font-semibold whitespace-nowrap">
+          <dt class="text-gray-600 font-semibold whitespace-nowrap text-[15px]">
             สถานะการเผยแพร่
           </dt>
           <dd class="min-w-0">
@@ -193,7 +221,7 @@
             </span>
           </dd>
 
-          <dt class="text-gray-600 font-semibold whitespace-nowrap">
+          <dt class="text-gray-600 font-semibold whitespace-nowrap text-[15px]">
             สถานะการใช้งาน
           </dt>
           <dd class="min-w-0">
@@ -228,6 +256,8 @@ import dayjs from "dayjs";
 import "dayjs/locale/th";
 import EditCurriculumModal from "./EditCurriculumModal.vue";
 import { getTypes } from "@/services/apiService";
+import { fa } from "vuetify/locale";
+
 dayjs.locale("th");
 
 const props = defineProps({
@@ -241,6 +271,7 @@ const loadError = ref("");
 let fetchToken = 0;
 // ย่อ reference
 const detail = computed(() => props.curriculum ?? {});
+
 function onEditClick() {
   emit("request-edit", { ...(detail.value || {}) });
 }
@@ -378,5 +409,37 @@ async function handleRefreshData(e) {
   // ส่งผลลัพธ์ขึ้นพาเรนต์ให้รวม/เปิดโมดัลตาม flow ของพาเรนต์
   emit("refresh-data", e);
 }
+
+// กันค่าว่าง + trim (รองรับ array ด้วย)
+const safeText = (val, fallback = "-") => {
+  if (val === null || val === undefined) return fallback;
+  if (Array.isArray(val)) val = val.join(", ");
+  const s = String(val).trim();
+  return s ? s : fallback;
+};
+
+// ถ้าต้องเช็คปี (4 หลักเท่านั้น) ใช้ตัวนี้
+const safeYear = (val, fallback = "-") => {
+  const s = String(val ?? "").trim();
+  const n = Number(s);
+  return s.length === 4 && Number.isFinite(n) ? s : fallback;
+};
+
+// helper
+const isBlank = (v) => v == null || String(v).trim() === "";
+
+// ✅ กดแก้ไขได้ “เมื่อเป็น ม.33” และ “specific_no ว่าง”
+const canEdit = computed(() => {
+  const d = detail.value ?? {};
+  const s33 = d.is_section_33 === 1;
+  console.log("👉 s33:", s33);
+  const specificBlank = isBlank(d.specific_no); // true = ไม่มีค่า
+  console.log("👉 specificBlank:", specificBlank);
+  // ถ้า specificBlank เป็น true ปุ่มควรเปิด ก็ต่อเมื่อยังเป็น ม.33
+  if (s33 === true && specificBlank === true) return false;
+  // ถ้า specificBlank เป็น false ปุ่มควรเปิด ก็ตอเมื่อไม่เป็น ม.33
+  if (s33 === false && specificBlank === true) return true;
+});
+
 </script>
 

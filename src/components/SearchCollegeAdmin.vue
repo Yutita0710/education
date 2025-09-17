@@ -21,6 +21,7 @@
 
     <!-- Filter Section -->
     <div
+      :key="controlsKey"
       class="bg-white rounded-[1.4rem] border shadow-lg px-4 py-4 md:px-6 md:py-5 w-full h-auto md:-mt-[8rem] md:w-[80%] mt-0 mx-auto text-[#111C2D]/80"
     >
       <div
@@ -48,6 +49,7 @@
               v-model="searchText"
               @keyup.enter="doSearch"
               type="text"
+              maxlength="100"
               placeholder="ค้นหาชื่อสถาบัน/วิทยาเขต"
               class="flex-1 min-w-0 w-full bg-transparent placeholder-gray-400 text-gray-900 outline-none px-2 py-[0.15rem] text-sm md:text-base"
             />
@@ -89,7 +91,6 @@
               placeholder="พิมพ์จังหวัด/รัฐ/เมือง (สำหรับต่างประเทศ)"
               @keyup.enter="doSearch"
             />
-           
           </template>
         </div>
 
@@ -166,12 +167,12 @@ import {
 } from "@headlessui/vue";
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/vue/20/solid";
 import { countryList, provinceList } from "../services/apiService";
-import { ref, onMounted, computed, watch, toRaw } from "vue";
+import { ref, onMounted, computed, watch, toRaw, nextTick } from "vue";
 import { useRoute } from "vue-router";
 import vSelect from "vue-select";
 import "vue-select/dist/vue-select.css";
 
-const emit = defineEmits(["update:filters", "search"]);
+const emit = defineEmits(["update:filters", "search", "reset"]);
 const route = useRoute();
 
 // ===== DEBUG helpers =====
@@ -197,6 +198,8 @@ const statusOptions = [
 
 const thId = ref(null); // เก็บ id ของ "ประเทศไทย"
 const provinceText = ref(""); // สำหรับต่างประเทศ: พิมพ์ชื่อจังหวัดเอง
+const controlsKey = ref(0);
+
 const isThailandSelected = computed(
   () => String(selectedCountry.value ?? "") === String(thId.value ?? "")
 );
@@ -217,15 +220,20 @@ watch(
   }
 );
 
-const paramsRaw = computed(() => ({
-  search: (searchText.value || "").trim(),
-  country: selectedCountry.value || "",
-  // ไทย → ใช้ selectedProvince, ต่างประเทศ → ใช้ provinceText
-  province: isThailandSelected.value
-    ? selectedProvince.value || ""
-    : provinceText.value || "",
-  status: selectedStatus.value?.id ?? "",
-}));
+function emptyToUndef(v) { return v === "" ? undefined : v; }
+
+const paramsRaw = computed(() => {
+  const search = sanitizeSearch(searchText.value);
+  const country = opt(selectedCountry.value);
+  const province = isThailandSelected.value ? opt(selectedProvince.value) : opt(provinceText.value);
+
+  return {
+    search:  emptyToUndef(search),
+    country: emptyToUndef(country),
+    province: emptyToUndef(province),
+    status:  emptyToUndef(selectedStatus.value?.id ?? ""),
+  };
+});
 
 const paramsForApi = computed(() => {
   const r = { ...paramsRaw.value };
@@ -243,7 +251,7 @@ const paramsForApi = computed(() => {
 
 // กัน emit ระหว่าง init
 const ready = ref(false);
-
+const isResetting = ref(false); // 👈 เพิ่มบรรทัดนี้
 // ยิง update:filters อัตโนมัติ (debounce 300ms)
 let t;
 watch(
@@ -253,17 +261,15 @@ watch(
     selectedProvince,
     selectedStatus,
     selectedIspublic,
-    provinceText, // ← เพิ่มตัวนี้
+    provinceText,
   ],
   () => {
-    if (!ready.value) return; // ยัง init อยู่ ไม่ต้อง emit
+    if (!ready.value || isResetting.value) return; // 👈 กัน emit ระหว่างรีเซ็ต
     clearTimeout(t);
     t = setTimeout(() => {
       dbg("emit update:filters (raw):", toRaw(paramsRaw.value));
       emit("update:filters", paramsRaw.value);
-      // เพิ่มได้ถ้าชอบ:
       emit("search", paramsForApi.value);
-      // ให้แม่ sync URL
     }, 300);
   },
   { deep: true }
@@ -274,10 +280,7 @@ const doSearch = () => {
   dbg("doSearch raw:", toRaw(paramsRaw.value));
   dbg("doSearch for API:", toRaw(paramsForApi.value));
   emit("update:filters", paramsRaw.value);
-  // เพิ่มได้ถ้าชอบ:
   emit("search", paramsForApi.value);
-
-  emit("search", paramsRaw.value); // ถ้าแม่อยากยิงทันที
 };
 
 // เติมค่าจาก URL ให้ selection
@@ -369,18 +372,79 @@ onMounted(async () => {
 });
 
 // ปุ่มล้างค่า
-const reset = () => {
+const reset = async () => {
+  isResetting.value = true; // 👈 เริ่มโหมดรีเซ็ต
+  clearTimeout(t); // ยกเลิก debounce เก่า (ถ้ามี)
+
+  // เคลียร์ค่าทั้งหมด
+  searchText.value = "";
   selectedCountry.value = null;
   selectedProvince.value = null;
   provinceText.value = "";
   selectedStatus.value = null;
   selectedIspublic.value = null;
-  searchText.value = "";
-  dbg("reset (raw):", toRaw(paramsRaw.value));
-  emit("update:filters", paramsRaw.value);
-  // เพิ่มได้ถ้าชอบ:
-  emit("search", paramsForApi.value);
+
+  controlsKey.value++;
+  // รอให้ DOM/ค่า reactive เคลียร์เสร็จแล้ว
+  await nextTick();
+
+  // ปิดโหมดรีเซ็ต
+  isResetting.value = false;
+
+  // ยิง emit ทีเดียวหลังจากเคลียร์ครบ
+  
+  emit("reset");
 };
+
+// ====== text utils ======
+const MAX_SEARCH_LEN = 120;
+
+/** ตัดช่องว่างซ้ำ / zero-width / normalize */
+function normalizeText(v) {
+  return String(v ?? "")
+    .normalize("NFKC")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")   // zero-width
+    .replace(/\s+/g, " ")                    // ช่องว่างหลายอัน → อันเดียว
+    .trim();
+}
+
+/** sanitize สำหรับช่องค้นหา */
+function sanitizeSearch(v) {
+  let t = normalizeText(v);
+
+  // เอาอักขระเสี่ยงต่อ HTML/SQL/XSS ออก
+  // (ถ้าต้องการเข้มกว่านี้ใช้ whitelist ด้านล่างแทน)
+  t = t.replace(/[<>"`$\\]/g, "");
+
+  // ถ้า backend ใช้ LIKE ควร escape % และ _
+  t = t.replace(/[%_]/g, "\\$&");
+
+  // จำกัดความยาวกัน payload แปลก ๆ
+  if (t.length > MAX_SEARCH_LEN) t = t.slice(0, MAX_SEARCH_LEN);
+
+  return t;
+}
+
+/** เวอร์ชัน whitelist (ปล่อยแค่ “ตัวอักษร/ตัวเลขทุกภาษา + ช่องว่าง + -._'()/&”)
+ * ใช้แทนบรรทัดลบอักขระข้างบนได้เลยถ้าต้องการเข้มงวด
+ */
+function sanitizeSearchStrict(v) {
+  const t = normalizeText(v);
+  try {
+    return t.replace(/[^\p{L}\p{N}\s\-._'()\/&]/gu, "").slice(0, MAX_SEARCH_LEN);
+  } catch {
+    // fallback: Latin/เลข/ไทย
+    return t.replace(/[^a-zA-Z0-9\u0E00-\u0E7F\s\-._'()\/&]/g, "")
+            .slice(0, MAX_SEARCH_LEN);
+  }
+}
+
+/** คืน "" ถ้าค่าว่างหลังทำความสะอาด (ไว้ใช้กับ params อื่น ๆ ด้วย) */
+function opt(v) {
+  const s = normalizeText(v);
+  return s ? s : "";
+}
+
 </script>
 
 

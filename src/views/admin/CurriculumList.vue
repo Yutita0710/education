@@ -85,7 +85,6 @@
 
   <!-- Loading Overlay -->
   <div v-if="isLoading" class="loading-overlay">
-    <!-- From Uiverse.io by forgingdestiny -->
     <div class="loader">
       <div class="circle" tabindex="0"></div>
       <div class="circle" tabindex="0"></div>
