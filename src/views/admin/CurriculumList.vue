@@ -85,6 +85,7 @@
 
   <!-- Loading Overlay -->
   <div v-if="isLoading" class="loading-overlay">
+    <!-- From Uiverse.io by forgingdestiny -->
     <div class="loader">
       <div class="circle" tabindex="0"></div>
       <div class="circle" tabindex="0"></div>
@@ -310,20 +311,20 @@ async function fetchData() {
       type: toOpt(state.value.type),
     };
 
-    console.log("👉 filters:", filters);
-    console.log(
-      "👉 fetchData page/limit:",
-      state.value.page,
-      state.value.limit,
-      filters
-    );
+    // console.log("👉 filters:", filters);
+    // console.log(
+    //   "👉 fetchData page/limit:",
+    //   state.value.page,
+    //   state.value.limit,
+    //   filters
+    // );
     // ❗️ถ้า service ของคุณเป็น (page, limit, filters) ให้ใช้บรรทัดนี้แทน:
     const res = await getEducationPaginated(
       state.value.page,
       state.value.limit,
       filters
     );
-    console.log(res);
+    // console.log(res);
     if (mySeq !== reqSeq) return;
     const rows = res?.data?.data ?? [];
     const m = res?.data?.meta ?? {};

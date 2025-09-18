@@ -735,7 +735,7 @@ async function saveCollege() {
     active: Number(form.selectedStatus?.id ?? form.active ?? 1) === 1 ? 1 : 0,
   });
 
-  console.log("👉 payload:", payload);
+  // console.log("👉 payload:", payload);
 
   isLoading.value = true;
   try {

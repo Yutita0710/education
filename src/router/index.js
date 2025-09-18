@@ -54,7 +54,7 @@ const routes = [
 
 const router = createRouter({
   // ใช้ BASE_URL ของ Vite (เช่น /education/) ให้ตรงกับการ deploy
-  history: createWebHistory(import.meta.env.VITE_BASE),
+  history: createWebHistory(import.meta.env.VITE_BASE || "/education/"),
   routes,
 });
 

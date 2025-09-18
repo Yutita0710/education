@@ -265,7 +265,7 @@ async function fetchData() {
     );
     if (!response?.data) throw new Error("ไม่ได้รับข้อมูลจากเซิร์ฟเวอร์");
     if (seq !== fetchSeq) return;
-console.log("response.data", response.data);
+// console.log("response.data", response.data);
     const { data: rows = [], meta: metaData = {} } = response.data || {};
     tableData.value = rows;
     meta.value = {

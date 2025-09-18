@@ -43,6 +43,7 @@
             </svg>
             <input
               v-model="search"
+              @input="search = search.replace(/%/g, '')"
               type="text"
               maxlength="100"
               placeholder="ค้นหาชื่อสถาบัน/ชื่อหลักสูตร/หลักสูตร"
@@ -216,7 +217,6 @@ import {
 import { ChevronUpDownIcon, CheckIcon } from "@heroicons/vue/24/solid";
 import vSelect from "vue-select";
 import "vue-select/dist/vue-select.css";
-import { buildSearchPayload } from "@/utils";
 
 const emit = defineEmits(["onSearch", "clear"]);
 const router = useRouter();
@@ -317,11 +317,6 @@ const status_curriculum = [
   { id: "0", name: "ไม่ใช้งาน" },
 ];
 
-// ยิงค้นหา
-const emptyToUndef = (v) => (v === "" ? undefined : v);
-
-// ใช้ alias ที่ตั้งไว้ (@utils) หรือ "@/utils/sanitize"
-
 function emitSearch() {
   const payload = buildSearchPayload({
     type: selected.value,
@@ -331,10 +326,10 @@ function emitSearch() {
     curriculum_published: curriculum_published.value,
     curriculum_active: status.value,
   });
+
+  // console.log("👉 payload:", payload);
   emit("onSearch", payload);
 }
-
-
 
 // debounce ช่องค้นหา
 let typingTimer = null;
@@ -448,6 +443,68 @@ onMounted(async () => {
   hydrated.value = true;
 });
 
+// ---- src/utils/sanitize.js ----
+const MAX_SEARCH_LEN = 120;
 
+// ตัด zero-width, ยุบช่องว่าง, trim, และ normalize รูปแบบตัวอักษร
+const normalizeText = (v) =>
+  String(v ?? "")
+    .normalize("NFKC")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "") // zero-width
+    .replace(/\s+/g, " ")
+    .trim();
+
+// ปลอดภัยสำหรับช่องค้นหา: กัน < > " ` $ \ และ escape % _
+const sanitizeSearch = (v) => {
+  let s = normalizeText(v);
+  s = s.replace(/[<>"`$\\]/g, ""); // กัน XSS-ish
+  s = s.replace(/[%_]/g, "\\$&"); // escape สำหรับ SQL LIKE
+  return s.slice(0, MAX_SEARCH_LEN);
+};
+
+// ดึง id ออกจาก option ถ้าไม่มีให้เป็น ""
+const toIdOrEmpty = (opt) =>
+  opt?.id === null || opt?.id === undefined || opt?.id === ""
+    ? ""
+    : String(opt.id);
+
+// ปีต้องเป็นเลข 4 หลักในช่วงที่ยอมรับ (นอกช่วงคืน "")
+const sanitizeYear = (optOrVal) => {
+  const raw = optOrVal?.id ?? optOrVal; // รับได้ทั้ง object {id,name} หรือ primitive
+  const s = String(raw ?? "").trim();
+
+  // ต้องเป็นตัวเลข 4 หลัก
+  if (!/^\d{4}$/.test(s)) return "";
+
+  const n = Number(s);
+  // รองรับทั้ง ค.ศ. และ พ.ศ.
+  const isCE = n >= 1900 && n <= 9999;
+  const isBE = n >= 1900 && n <= 9999;
+
+  return isCE || isBE ? s : "";
+};
+// ค่าที่เป็น "" หรือ undefined/null → ตัดออก
+const compactObject = (obj) =>
+  Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== "" && v != null)
+  );
+
+// สร้าง payload สำหรับ onSearch ทีเดียวจบ
+const buildSearchPayload = ({
+  type,
+  search,
+  startYear,
+  endYear,
+  curriculum_published,
+  curriculum_active,
+}) =>
+  compactObject({
+    type: toIdOrEmpty(type),
+    search: sanitizeSearch(search),
+    startYear: sanitizeYear(startYear),
+    endYear: sanitizeYear(endYear),
+    curriculum_published: toIdOrEmpty(curriculum_published),
+    curriculum_active: toIdOrEmpty(curriculum_active),
+  });
 </script>
 

@@ -48,6 +48,7 @@
             <input
               v-model="searchText"
               @keyup.enter="doSearch"
+              @input="searchText = searchText.replace(/%/g, '')"
               type="text"
               maxlength="100"
               placeholder="ค้นหาชื่อสถาบัน/วิทยาเขต"
@@ -69,8 +70,9 @@
         </div>
 
         <!-- Province -->
+        <!-- Province -->
         <div>
-          <!-- เลือกไทย: ใช้ v-select รายชื่อจังหวัด -->
+          <!-- ถ้าเลือกไทย → เลือกจากรายการจังหวัด -->
           <template v-if="isThailandSelected">
             <v-select
               v-model="selectedProvince"
@@ -79,17 +81,28 @@
               :reduce="(p) => String(p.id)"
               class="w-full font-[15px]"
               placeholder="เลือกจังหวัด"
+              :disabled="!isCountrySelected"
             />
           </template>
 
-          <!-- อื่นๆ (รวมถึงยังไม่เลือกประเทศ): ใช้ input ให้พิมพ์เอง -->
+          <!-- ถ้าเป็นประเทศอื่น หรือยังไม่เลือกประเทศ → ใช้ input -->
           <template v-else>
             <input
               v-model.trim="provinceText"
               type="text"
               class="w-full rounded-lg border px-3 py-3"
-              placeholder="พิมพ์จังหวัด/รัฐ/เมือง (สำหรับต่างประเทศ)"
-              @keyup.enter="doSearch"
+              :readonly="!isCountrySelected"
+              :class="
+                !isCountrySelected
+                  ? 'bg-gray-100 cursor-not-allowed text-gray-400 placeholder:text-gray-400'
+                  : ''
+              "
+              :placeholder="
+                isCountrySelected
+                  ? 'พิมพ์จังหวัด/รัฐ/เมือง (สำหรับต่างประเทศ)'
+                  : 'เลือกประเทศก่อน'
+              "
+              @keyup.enter="isCountrySelected && doSearch()"
             />
           </template>
         </div>
@@ -200,8 +213,14 @@ const thId = ref(null); // เก็บ id ของ "ประเทศไท�
 const provinceText = ref(""); // สำหรับต่างประเทศ: พิมพ์ชื่อจังหวัดเอง
 const controlsKey = ref(0);
 
+const isCountrySelected = computed(
+  () => selectedCountry.value !== null && selectedCountry.value !== ""
+);
+
 const isThailandSelected = computed(
-  () => String(selectedCountry.value ?? "") === String(thId.value ?? "")
+  () =>
+    isCountrySelected.value &&
+    String(selectedCountry.value ?? "") === String(thId.value ?? "")
 );
 // จังหวัดตามประเทศ
 const filteredProvinceOptions = computed(() => {
@@ -220,18 +239,22 @@ watch(
   }
 );
 
-function emptyToUndef(v) { return v === "" ? undefined : v; }
+function emptyToUndef(v) {
+  return v === "" ? undefined : v;
+}
 
 const paramsRaw = computed(() => {
   const search = sanitizeSearch(searchText.value);
   const country = opt(selectedCountry.value);
-  const province = isThailandSelected.value ? opt(selectedProvince.value) : opt(provinceText.value);
+  const province = isThailandSelected.value
+    ? opt(selectedProvince.value)
+    : opt(provinceText.value);
 
   return {
-    search:  emptyToUndef(search),
+    search: emptyToUndef(search),
     country: emptyToUndef(country),
     province: emptyToUndef(province),
-    status:  emptyToUndef(selectedStatus.value?.id ?? ""),
+    status: emptyToUndef(selectedStatus.value?.id ?? ""),
   };
 });
 
@@ -267,7 +290,7 @@ watch(
     if (!ready.value || isResetting.value) return; // 👈 กัน emit ระหว่างรีเซ็ต
     clearTimeout(t);
     t = setTimeout(() => {
-      dbg("emit update:filters (raw):", toRaw(paramsRaw.value));
+      // dbg("emit update:filters (raw):", toRaw(paramsRaw.value));
       emit("update:filters", paramsRaw.value);
       emit("search", paramsForApi.value);
     }, 300);
@@ -277,8 +300,8 @@ watch(
 
 // Enter / ปุ่มค้นหา
 const doSearch = () => {
-  dbg("doSearch raw:", toRaw(paramsRaw.value));
-  dbg("doSearch for API:", toRaw(paramsForApi.value));
+  // dbg("doSearch raw:", toRaw(paramsRaw.value));
+  // dbg("doSearch for API:", toRaw(paramsForApi.value));
   emit("update:filters", paramsRaw.value);
   emit("search", paramsForApi.value);
 };
@@ -361,7 +384,7 @@ onMounted(async () => {
     ready.value = true;
 
     // emit แรกหลัง init
-    dbg("mounted emit (raw):", toRaw(paramsRaw.value));
+    // dbg("mounted emit (raw):", toRaw(paramsRaw.value));
     emit("update:filters", paramsRaw.value);
     // เพิ่มได้ถ้าชอบ:
     emit("search", paramsForApi.value);
@@ -392,7 +415,7 @@ const reset = async () => {
   isResetting.value = false;
 
   // ยิง emit ทีเดียวหลังจากเคลียร์ครบ
-  
+
   emit("reset");
 };
 
@@ -403,8 +426,8 @@ const MAX_SEARCH_LEN = 120;
 function normalizeText(v) {
   return String(v ?? "")
     .normalize("NFKC")
-    .replace(/[\u200B-\u200D\uFEFF]/g, "")   // zero-width
-    .replace(/\s+/g, " ")                    // ช่องว่างหลายอัน → อันเดียว
+    .replace(/[\u200B-\u200D\uFEFF]/g, "") // zero-width
+    .replace(/\s+/g, " ") // ช่องว่างหลายอัน → อันเดียว
     .trim();
 }
 
@@ -425,26 +448,15 @@ function sanitizeSearch(v) {
   return t;
 }
 
-/** เวอร์ชัน whitelist (ปล่อยแค่ “ตัวอักษร/ตัวเลขทุกภาษา + ช่องว่าง + -._'()/&”)
- * ใช้แทนบรรทัดลบอักขระข้างบนได้เลยถ้าต้องการเข้มงวด
- */
-function sanitizeSearchStrict(v) {
-  const t = normalizeText(v);
-  try {
-    return t.replace(/[^\p{L}\p{N}\s\-._'()\/&]/gu, "").slice(0, MAX_SEARCH_LEN);
-  } catch {
-    // fallback: Latin/เลข/ไทย
-    return t.replace(/[^a-zA-Z0-9\u0E00-\u0E7F\s\-._'()\/&]/g, "")
-            .slice(0, MAX_SEARCH_LEN);
-  }
-}
-
 /** คืน "" ถ้าค่าว่างหลังทำความสะอาด (ไว้ใช้กับ params อื่น ๆ ด้วย) */
 function opt(v) {
   const s = normalizeText(v);
   return s ? s : "";
 }
-
+watch(selectedCountry, () => {
+  selectedProvince.value = null;
+  provinceText.value = "";
+});
 </script>
 
 

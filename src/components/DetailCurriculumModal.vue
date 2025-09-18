@@ -432,9 +432,9 @@ const isBlank = (v) => v == null || String(v).trim() === "";
 const canEdit = computed(() => {
   const d = detail.value ?? {};
   const s33 = d.is_section_33 === 1;
-  console.log("👉 s33:", s33);
+  // console.log("👉 s33:", s33);
   const specificBlank = isBlank(d.specific_no); // true = ไม่มีค่า
-  console.log("👉 specificBlank:", specificBlank);
+  // console.log("👉 specificBlank:", specificBlank);
   // ถ้า specificBlank เป็น true ปุ่มควรเปิด ก็ต่อเมื่อยังเป็น ม.33
   if (s33 === true && specificBlank === true) return false;
   // ถ้า specificBlank เป็น false ปุ่มควรเปิด ก็ตอเมื่อไม่เป็น ม.33

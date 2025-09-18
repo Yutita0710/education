@@ -221,7 +221,7 @@ const showNavbar = computed(
 );
 const isAdmin = computed(() => !!token.value);
 
-console.log("isAdmin:", isAdmin);
+// console.log("isAdmin:", isAdmin);
 watch(isAdmin, (val) => {
   if (!val) return;
   if (route.name !== "admin-curriculum") {

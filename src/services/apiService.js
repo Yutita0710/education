@@ -2,22 +2,56 @@
 import axios from "axios";
 
 /* =========================
- *  CONFIG & AXIOS INSTANCE
+ *  CONFIG
  * =======================*/
 
-// Sliding session TTL (ms)
-const SESSION_TTL_MS =
-  Number(import.meta.env.VITE_SESSION_TTL_MS) || 60 * 60 * 1000; // 60 นาที
+// ใช้ env ของ Vite ให้ถูกต้อง
+const env = import.meta.env;
 
-// Base URL: dev ยิงผ่าน Vite proxy (/api) | prod ใช้ VITE_API_BASE หรือ /api
-const baseURL = import.meta.env.DEV
-  ? "/api"
-  : (import.meta.env.VITE_API_BASE ?? "/api");
+// Sliding session TTL (ms)
+const SESSION_TTL_MS = Number(env.VITE_SESSION_TTL_MS) || 60 * 60 * 1000; // 60 นาที
+
+// อ่านค่า runtime override จาก public/env.js (ถ้ามี)
+const RUNTIME_API_BASE =
+  typeof window !== "undefined" ? window.__RUNTIME_CONFIG__?.API_BASE?.trim() : undefined;
+
+// อ่านค่า env ตอน build
+const ENV_API_BASE = env.VITE_API_BASE?.trim();
+
+/** ลบ / ท้ายสุด */
+const stripTrailingSlash = (u) => (u ? u.replace(/\/+$/, "") : u);
+
+/** เติม /api ถ้าไม่มี */
+const withApiSuffix = (u) => {
+  if (!u) return u;
+  const clean = stripTrailingSlash(u);
+  return clean.toLowerCase().endsWith("/api") ? clean : `${clean}/api`;
+};
+
+// เลือก BASE_URL ตามโหมด
+const BASE_URL = env.DEV
+  ? "/api" // dev ใช้ Vite proxy
+  : stripTrailingSlash(
+      // ลำดับ: runtime > env > fallback
+      RUNTIME_API_BASE ||
+        withApiSuffix(ENV_API_BASE) ||
+        "https://master-dev.tfac.or.th/api"
+    );
+
+// เตือนถ้าโปรดักชันไม่มีทั้ง runtime และ env (ยังมี fallback ให้)
+if (!env.DEV && !RUNTIME_API_BASE && !ENV_API_BASE) {
+  // eslint-disable-next-line no-console
+  console.warn("[apiService] VITE_API_BASE ไม่ถูกตั้งค่า ใช้ fallback:", BASE_URL);
+}
+
+/* =========================
+ *  AXIOS INSTANCE
+ * =======================*/
 
 export const apiClient = axios.create({
-  baseURL,
+  baseURL: BASE_URL, // ✅ ใช้ตัวแปรที่ถูกต้อง
   headers: { "Content-Type": "application/json" },
-  withCredentials: false,
+  withCredentials: false, // คุณใช้ Bearer token ใน localStorage อยู่แล้ว
 });
 
 /* ========== Interceptors ========== */
@@ -74,27 +108,17 @@ apiClient.interceptors.response.use(
 );
 
 /* =========================
- *     SMALL UTILITIES
+ *  SMALL UTILITIES
  * =======================*/
 
-export const SEARCH_MAX =
-  Number(import.meta.env.VITE_SEARCH_MAX) || 120; // จำกัดความยาวคำค้นหา
+export const SEARCH_MAX = Number(env.VITE_SEARCH_MAX) || 120;
 
-/** ทำความสะอาดคำค้นหา: trim + ตัดอักขระต้องห้าม + จำกัดความยาว */
 export function sanitizeSearch(input, maxLen = SEARCH_MAX) {
   if (input == null) return "";
   let s = String(input);
-
-  // Trim และ normalize space
   s = s.replace(/\s+/g, " ").trim();
-
-  // ตัด control chars / อักขระพิเศษที่ไม่อยากส่งเข้า API (ยกเว้นบางตัวที่ใช้ค้นหาปกติ)
-  // อนุญาต: ตัวอักษรไทย/อังกฤษ ตัวเลข เว้นวรรค และ . , - _ @ / ( ) ' " :
   s = s.replace(/[^0-9A-Za-zก-๙\s.,\-_@/()'":]/g, "");
-
-  // จำกัดความยาว
   if (s.length > maxLen) s = s.slice(0, maxLen);
-
   return s;
 }
 
@@ -111,21 +135,30 @@ const toInt = (v, d) => {
 const clamp = (n, min, max) => Math.max(min, Math.min(max, Number(n)));
 
 /* =========================
- *      API FUNCTIONS
+ *  API FUNCTIONS
  * =======================*/
 
 // Degrees
 export const getDegrees = () => apiClient.get("/education/degrees");
 
-/* -------- Colleges (มี limit เสมอ + ฟิลเตอร์สะอาด) -------- */
+/* -------- Colleges -------- */
 
 export const getCollegesPaginated = (params = {}) => {
-  const queryBase = {
-    page: toInt(params.page, 1),
-    limit: clamp(toInt(params.limit, 10), 1, 100), // กันยิงหนักเกินไป
-    sort: (params.sort || "institute_group").toString(),
-    order: ((params.order || "ASC") + "").toUpperCase() === "DESC" ? "DESC" : "ASC",
-  };
+  // คำนวณ limit แบบ optional: มีค่อยส่ง ไม่มีอย่าส่ง
+  const rawLimit = toInt(params.limit, undefined);
+  const limit =
+    Number.isFinite(rawLimit) ? clamp(rawLimit, 1, 100) : undefined;
+
+  // ถ้ามี limit ค่อยส่ง page ด้วย
+  const rawPage = toInt(params.page, 1);
+
+  const queryBase = compact({
+    ...(limit !== undefined ? { page: rawPage } : {}),
+    ...(limit !== undefined ? { limit } : {}),
+    sort: String(params.sort || "institute_group"),
+    order:
+      String(params.order || "ASC").toUpperCase() === "DESC" ? "DESC" : "ASC",
+  });
 
   const queryExtra = {};
   if (typeof params.search === "string") {
@@ -135,10 +168,8 @@ export const getCollegesPaginated = (params = {}) => {
   if (params.country) queryExtra.country = String(params.country);
   if (params.province) queryExtra.province = String(params.province);
   if (
-    params.status === 0 ||
-    params.status === 1 ||
-    params.status === "0" ||
-    params.status === "1"
+    params.status === 0 || params.status === 1 ||
+    params.status === "0" || params.status === "1"
   ) {
     queryExtra.status = Number(params.status);
   }
@@ -147,37 +178,27 @@ export const getCollegesPaginated = (params = {}) => {
   return apiClient.get("/education/colleges", { params: query });
 };
 
-export const getCollegesById = (id) =>
-  apiClient.get(`/education/colleges/${id}`);
 
-export const getCollegesGrouped = (id) =>
-  apiClient.get(`/education/colleges/grouped/${id}`);
-
-export const addEducationCollege = (data) =>
-  apiClient.post("/education/college", data);
-
-export const updateEducationCollege = (id, data) =>
-  apiClient.patch(`/education/college/${id}`, data);
+export const getCollegesById = (id) => apiClient.get(`/education/colleges/${id}`);
+export const getCollegesGrouped = (id) => apiClient.get(`/education/colleges/grouped/${id}`);
+export const addEducationCollege = (data) => apiClient.post("/education/college", data);
+export const updateEducationCollege = (id, data) => apiClient.patch(`/education/college/${id}`, data);
 
 /* -------- Curriculum -------- */
 
 export const getEducationPaginated = (page = 1, limit, filters = {}) => {
   const params = { page: toInt(page, 1) };
-
   if (Number.isFinite(limit)) params.limit = clamp(Number(limit), 1, 100);
 
   const f = filters ?? {};
 
-  if (typeof f.sort === "string" && f.sort.trim()) {
-    params.sort = f.sort.trim();
-  }
+  if (typeof f.sort === "string" && f.sort.trim()) params.sort = f.sort.trim();
   if (typeof f.order === "string") {
     const ord = f.order.toUpperCase();
     if (ord === "ASC" || ord === "DESC") params.order = ord;
   }
 
   const others = {
-    // sanitize search ที่นี่ด้วย
     search:
       typeof f.search === "string" && sanitizeSearch(f.search)
         ? sanitizeSearch(f.search)
@@ -187,8 +208,7 @@ export const getEducationPaginated = (page = 1, limit, filters = {}) => {
     curriculum_active: f.curriculum_active,
     degree_active: f.degree_active,
     college_name: f.college_name,
-    meeting_resolution:
-      typeof f.meeting_resolution === "boolean" ? f.meeting_resolution : undefined,
+    meeting_resolution: typeof f.meeting_resolution === "boolean" ? f.meeting_resolution : undefined,
     curriculum_published: f.curriculum_published,
     start_year: f.start_year,
     end_year: f.end_year,
@@ -201,21 +221,11 @@ export const getEducationPaginated = (page = 1, limit, filters = {}) => {
   return apiClient.get("/education/curriculums", { params });
 };
 
-export const getEducationById = (id) =>
-  apiClient.get(`/education/curriculums/${id}`);
-
-export const getCurriculumsListAll = () =>
-  apiClient.get("/education/curriculumsListAll");
-
-export const addEducation = (data) =>
-  apiClient.post("/education/curriculum", data);
-
-export const updateEducation = (id, data) =>
-  apiClient.patch(`/education/curriculum/${id}`, data);
-
-export const countCurriculum = () =>
-  apiClient.get("/education/countCurriculums");
-
+export const getEducationById = (id) => apiClient.get(`/education/curriculums/${id}`);
+export const getCurriculumsListAll = () => apiClient.get("/education/curriculumsListAll");
+export const addEducation = (data) => apiClient.post("/education/curriculum", data);
+export const updateEducation = (id, data) => apiClient.patch(`/education/curriculum/${id}`, data);
+export const countCurriculum = () => apiClient.get("/education/countCurriculums");
 export const checkCollegeNameExists = (name) =>
   apiClient.get(`/education/collegeExists/${encodeURIComponent(name)}`);
 
@@ -230,8 +240,6 @@ export const searchEducation = (query, page = 1, limit = 10, filters = {}) => {
   };
   return apiClient.get("/education/search", { params });
 };
-
-/* -------- Locations / Types -------- */
 
 export const getallYears = () => apiClient.get("/education/getstartYears/listBE");
 export const provinceList = () => apiClient.get("/locations/provinces");

@@ -23,10 +23,19 @@ export const toIdOrEmpty = (opt) =>
 
 // ปีต้องเป็นเลข 4 หลักในช่วงที่ยอมรับ (นอกช่วงคืน "")
 export const sanitizeYear = (optOrVal) => {
-  const n = Number(optOrVal?.id ?? optOrVal);
-  return Number.isInteger(n) && n >= 1900 && n <= 2100 ? String(n) : "";
-};
+  const raw = optOrVal?.id ?? optOrVal;        // รับได้ทั้ง object {id,name} หรือ primitive
+  const s = String(raw ?? "").trim();
 
+  // ต้องเป็นตัวเลข 4 หลัก
+  if (!/^\d{4}$/.test(s)) return "";
+
+  const n = Number(s);
+  // รองรับทั้ง ค.ศ. และ พ.ศ.
+  const isCE = n >= 1900 && n <= 2100;
+  const isBE = n >= 2400 && n <= 2799;
+
+  return (isCE || isBE) ? s : "";
+};
 // ค่าที่เป็น "" หรือ undefined/null → ตัดออก
 export const compactObject = (obj) =>
   Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== "" && v != null));
