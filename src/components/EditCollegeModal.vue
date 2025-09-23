@@ -84,7 +84,7 @@
             <v-select
               v-else
               v-model="form.selectedCollege"
-              :options="colleges"
+              :options="filteredCollegesForGroup"
               label="name"
               :reduce="(c) => String(c.id)"
               placeholder="เลือกสถาบัน..."
@@ -342,11 +342,18 @@ const initial = reactive({
 });
 
 const displayGroupName = computed(() => {
+  // ถ้าไม่มีค่า → ว่าง
+  if (!form.selectedCollege) return '';
+
+  // ถ้าเลือกเป็นตัวเอง (กันเผื่อ) → ว่าง
+  if (String(form.selectedCollege) === String(form.id)) return '';
+
   const opt = colleges.value.find(
-    (o) => String(o.id) === String(form.selectedCollege)
+    o => String(o.id) === String(form.selectedCollege)
   );
-  return opt?.name || "-";
+  return opt?.name || '';
 });
+
 const displayCountryName = computed(() => {
   const opt = countryOptions.value.find(
     (o) => String(o.id) === String(form.selectedCountry)
@@ -388,6 +395,10 @@ const showProvinceStar = computed(() => {
     ? isEmpty(form.selectedProvince) // ไทย → ต้องเลือกจาก select
     : isEmpty(form.province); // ต่างประเทศ → ต้องกรอกข้อความ
 });
+
+const filteredCollegesForGroup = computed(() =>
+  colleges.value.filter(c => String(c.id) !== String(form.id))
+);
 
 // ------- Reactive state -------
 const isLoading = ref(false);
@@ -578,10 +589,14 @@ function loadFormData() {
   }
 
   // ---- กลุ่มสถาบัน ----
-  form.selectedCollege = c.institute_group ?? c.group_id ?? null;
-  form.selectedCollege = form.selectedCollege
-    ? String(form.selectedCollege)
-    : null;
+  let groupId = c.institute_group ?? c.group_id ?? null;
+  groupId = groupId ? String(groupId) : null;
+
+  // ✅ ถ้า groupId เท่ากับ id ตัวเอง ให้ถือว่า "ไม่มีการจัดกลุ่ม"
+  if (groupId && String(groupId) === String(c.id)) {
+    groupId = null;
+  }
+  form.selectedCollege = groupId;
 
   // ---- สถานะ ----
   form.selectedStatus =
@@ -589,7 +604,10 @@ function loadFormData() {
 
   // ====== เก็บค่าเดิมจาก API ไว้ตัดสินใจล็อค ======
   initial.countryId = form.selectedCountry;
+
+  // ✅ อัปเดต initial.groupId หลัง normalize แล้ว (จะเป็น null ถ้าเท่ากับตัวเอง)
   initial.groupId = form.selectedCollege;
+
   if (String(form.selectedCountry) === String(TH_ID.value)) {
     initial.provinceId = form.selectedProvince;
     initial.provinceName = null;
@@ -601,6 +619,7 @@ function loadFormData() {
     initial.provinceName = null;
   }
 }
+
 
 function handleClose(force = false) {
   if (isLoading.value && !force) return; // กันผู้ใช้กดปิดกลางคัน แต่ allow force
@@ -632,6 +651,7 @@ async function saveCollege() {
     }
   }
 
+  
   const payloadRaw = {
     name: cleanStr(form.name), // ผ่าน validation แล้ว
     campus: textOrUndef(form.campus), // ว่าง => undefined

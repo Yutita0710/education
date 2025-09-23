@@ -51,7 +51,8 @@
             <input
               v-model="search"
               type="text"
-              ทฟ
+              @input="search = search.replace(/%/g, '')"
+              maxlength="100"
               placeholder="ค้นหาชื่อสถาบัน/ชื่อหลักสูตร/หลักสูตร"
               class="flex-1 min-w-0 bg-transparent placeholder-gray-400 text-gray-900 outline-none"
             />
