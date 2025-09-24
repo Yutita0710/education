@@ -797,8 +797,7 @@ async function fetchColleges() {
     const params = {
       sort: "institute_group",
       order: "ASC",
-      search: search.value.trim(),
-      active: 1,
+      status: 1,
     };
     const res = await getCollegesPaginated(params);
     const rows = res.data?.data || [];

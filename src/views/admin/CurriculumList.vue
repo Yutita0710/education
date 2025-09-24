@@ -45,8 +45,8 @@
         />
 
         <PaginationBar
-          :current-page="state.page"
-          v-model:perPage="state.limit"
+          :current-page="currentPage"
+          v-model:perPage="pageSize"
           :total="total"
           :max-visible="5"
           @changePage="onPageChange"
@@ -128,7 +128,9 @@ import EditCurriculumModal from "@/components/EditCurriculumModal.vue";
 const isAdmin = !!localStorage.getItem("token");
 const route = useRoute();
 const router = useRouter();
-
+const currentPage = computed(() => Number(state.value.page) || 1);
+const isPristineUrl = ref(Object.keys(route.query || {}).length === 0);
+let ignoreNextRouteSync = false;
 const showCurriculumModal = ref(false);
 // ---------- state หลัก (ผูกกับ URL) ----------
 const state = ref({
@@ -159,6 +161,26 @@ const meta = ref({
 });
 const isLoading = ref(false);
 let reqSeq = 0;
+
+// pageSize (ผูกกับ PaginationBar)
+const pageSize = computed({
+  get: () => Number(state.value.limit) || 10,
+  set: (val) => onPageSizeChange(val),
+});
+
+function onPageSizeChange(newSize) {
+  // กันยิงตั้งแต่ mount/โหลด
+  if (isLoading.value) return;
+  const n = Number(newSize);
+  if (!Number.isFinite(n)) return;
+  if (n === state.value.limit) return;
+  // มี action ผู้ใช้แล้ว
+  isPristineUrl.value = false;
+  // เปลี่ยน limit แล้วรีเซ็ตไปหน้า 1
+  state.value.limit = n;
+  state.value.page = 1;
+  pushQuery({ limit: n, page: 1 });
+}
 // ---------- utils ----------
 const toInt = (v, d) => {
   const n = parseInt(v, 10);
@@ -264,7 +286,7 @@ function syncStateFromQuery() {
 
 function buildFullQuery(partial = {}) {
   const s = { ...state.value, ...partial };
-  return {
+  const out = {
     page: s.page,
     search: toOpt(s.search),
     sort: s.sort,
@@ -280,10 +302,15 @@ function buildFullQuery(partial = {}) {
     curriculum_published: toOpt(s.curriculum_published),
     meeting_resolution: toOpt(s.meeting_resolution),
   };
+  if (isPristineUrl.value) {
+    delete out.page;
+    delete out.limit;
+  }
+  return out;
 }
 
 async function pushQuery(partial) {
-  await router.replace({ query: clean(buildFullQuery(partial)) });
+  await writeUrl(clean(buildFullQuery(partial)));
 }
 
 const toBoolish = (v) => {
@@ -291,6 +318,24 @@ const toBoolish = (v) => {
   if (v === false || v === "false" || v === 0 || v === "0") return false;
   return "";
 };
+
+ function hasOnlyDefaultPageLimit(q = route.query) {
+   const hasPageOrLimit = Object.prototype.hasOwnProperty.call(q, 'page') ||
+                          Object.prototype.hasOwnProperty.call(q, 'limit');
+   if (!hasPageOrLimit) return false; // ถ้าไม่มี page/limit ก็ไม่ต้อง sanitize
+   const page = String(q.page ?? "");
+   const limit = String(q.limit ?? "");
+   const onlyDefault =
+     (page === "" || page === "1") && (limit === "" || limit === "10");
+   const others = Object.keys(q).filter((k) => !["page", "limit"].includes(k));
+   return onlyDefault && others.length === 0;
+ }
+
+function writeUrl(query) {
+  // เขียน URL เฉพาะหลังมี action ผู้ใช้เท่านั้น
+  if (isPristineUrl.value) return;
+  return router.replace({ query });
+}
 // ---------- โหลดข้อมูล ----------
 async function fetchData() {
   try {
@@ -357,11 +402,13 @@ async function fetchData() {
 
 // ---------- handlers ----------
 function onPageChange(page) {
+  isPristineUrl.value = false; // ผู้ใช้เปลี่ยนหน้าแล้ว
   pushQuery({ page });
 }
 
 function handleSearch(f = {}) {
   // รับ payload จาก <SearchForm /> (รองรับหลายคีย์ชื่อ)
+  isPristineUrl.value = false;
   pushQuery({
     page: 1,
     type: f.type ?? state.value.type,
@@ -382,9 +429,36 @@ function handleSearch(f = {}) {
 }
 
 function clearSearch() {
-  // ✅ ล้าง “ทีเดียว” โดยให้ URL เป็นแหล่งความจริง → watcher จะ sync  fetch ให้อัตโนมัติ
-  router.replace({ query: {} });
+  // กลับสู่สภาพ "ยังไม่เคยมี action"
+  isPristineUrl.value = true;
+  ignoreNextRouteSync = true;
+
+  // ล้าง query + คง path ที่ถูกต้อง (/education/admin/curriculum)
+  router.replace({ name: "admin-curriculum", query: {} }).catch(() => {});
+
+  // รีเซ็ต state เริ่มต้น
+  state.value = {
+    ...state.value,
+    page: 1,
+    limit: 10,
+    search: "",
+    sort: 0,
+    order: "ASC",
+    type: "",
+    college_active: "",
+    curriculum_active: "",
+    degree_active: "",
+    college_name: "",
+    start_year: "",
+    end_year: "",
+    curriculum_published: "",
+    meeting_resolution: "",
+  };
+
+  // โหลดข้อมูลรอบเดียว (watch จะไม่ยิงซ้ำเพราะ ignoreNextRouteSync = true)
+  fetchData();
 }
+
 // ---------- lifecycle ----------
 
 function closeCurriculumModal() {
@@ -394,13 +468,25 @@ function closeCurriculumModal() {
 
 // เปลี่ยน URL (รวม back/forward) → sync + fetch
 watch(
-  () => route.fullPath,
-  () => {
-    syncStateFromQuery();
-    fetchData();
+  () => route.query,
+  (q, o) => {
+    if (ignoreNextRouteSync) {
+      ignoreNextRouteSync = false;
+      return;
+    }
+   // 1) ซิงก์และโหลดก่อนเสมอ
+   syncStateFromQuery();
+   fetchData();
+
+   // 2) ถ้าหน้าเพิ่งเปิด (pristine) และมี page/limit โผล่มาแบบค่าเริ่มต้นจริง ๆ ค่อยล้าง URL
+   if (isPristineUrl.value && hasOnlyDefaultPageLimit(q)) {
+     ignoreNextRouteSync = true;
+     router.replace({ name: "admin-curriculum", query: {} }).catch(() => {});
+   }
   },
-  { immediate: true }
+  { immediate: true, deep: true }
 );
+
 </script>
 
 

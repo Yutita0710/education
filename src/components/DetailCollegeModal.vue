@@ -5,26 +5,41 @@
       class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 text-gray-700"
       v-bind="$attrs"
     >
-      <div class="bg-white rounded-2xl shadow-xl w-full max-w-4xl relative h-[70vh] overflow-hidden">
+      <div
+        class="bg-white rounded-2xl shadow-xl w-full max-w-4xl relative h-[70vh] overflow-hidden"
+      >
         <div class="flex flex-col h-full">
           <!-- Header -->
           <div class="sticky top-0 z-20 bg-white px-6 pt-6 pb-4 border-b">
             <div class="grid grid-cols-[1fr_auto_1fr] items-center">
               <div></div>
-              <h2 class="text-[17px] font-bold text-center">รายละเอียดสถาบัน</h2>
+              <h2 class="text-[17px] font-bold text-center">
+                รายละเอียดสถาบัน
+              </h2>
 
               <div class="justify-self-end flex items-center gap-2">
                 <button
                   @click.stop="onEditClick"
-                  :aria-describedby="detail?.id ? `tt-edit-${detail.id}` : 'tt-edit'"
+                  :aria-describedby="
+                    detail?.id ? `tt-edit-${detail.id}` : 'tt-edit'
+                  "
                   type="button"
                   class="inline-flex items-center bg-[#F8B15D] text-white w-20 h-10 rounded-full hover:bg-orange-500 transition justify-center"
                   aria-label="Edit"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                       stroke-width="1.5" stroke="currentColor" class="size-6">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                          d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"/>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="1.5"
+                    stroke="currentColor"
+                    class="size-6"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+                    />
                   </svg>
                   แก้ไข
                 </button>
@@ -35,11 +50,17 @@
                   class="inline-flex items-center justify-center w-10 h-10 rounded-full text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition"
                   aria-label="Close modal"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                       fill="currentColor" class="size-20">
-                    <path fill-rule="evenodd"
-                          d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm-1.72 6.97a.75.75 0 1 0-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 1 0 1.06 1.06L12 13.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L13.06 12l1.72-1.72a.75.75 0 1 0-1.06-1.06L12 10.94l-1.72-1.72Z"
-                          clip-rule="evenodd"/>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    class="size-20"
+                  >
+                    <path
+                      fill-rule="evenodd"
+                      d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm-1.72 6.97a.75.75 0 1 0-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 1 0 1.06 1.06L12 13.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L13.06 12l1.72-1.72a.75.75 0 1 0-1.06-1.06L12 10.94l-1.72-1.72Z"
+                      clip-rule="evenodd"
+                    />
                   </svg>
                 </button>
               </div>
@@ -47,7 +68,9 @@
           </div>
 
           <!-- Body -->
-          <div class="flex-1 overflow-y-auto px-14 py-4 space-y-4 [scrollbar-gutter:stable] overscroll-contain detail-body">
+          <div
+            class="flex-1 overflow-y-auto px-14 py-4 space-y-4 [scrollbar-gutter:stable] overscroll-contain detail-body"
+          >
             <!-- Skeleton -->
             <div v-if="isLoading" class="space-y-4 animate-pulse">
               <div class="h-4 bg-gray-200 rounded w-1/3"></div>
@@ -57,14 +80,21 @@
             </div>
 
             <template v-else>
-              <div class="grid grid-cols-[210px_minmax(0,1fr)] gap-6 items-start">
+              <div
+                class="grid grid-cols-[210px_minmax(0,1fr)] gap-6 items-start"
+              >
                 <div class="md:text-left">
                   <label class="block text-gray-700">
-                    <span class="inline-flex items-center gap-1 text-[15px] font-semibold">ชื่อสถาบัน</span>
+                    <span
+                      class="inline-flex items-center gap-1 text-[15px] font-semibold"
+                      >ชื่อสถาบัน</span
+                    >
                   </label>
                 </div>
                 <div class="min-w-0">
-                  <span class="block text-gray-900 min-w-0 whitespace-normal break-words hyphens-auto text-[14px]">
+                  <span
+                    class="block text-gray-900 min-w-0 whitespace-normal break-words hyphens-auto text-[14px]"
+                  >
                     {{ safeText(detail.name) }}
                   </span>
                 </div>
@@ -73,101 +103,162 @@
               <div class="grid grid-cols-[210px_1fr] gap-6">
                 <div class="md:text-left">
                   <label class="block text-gray-700">
-                    <span class="inline-flex items-center gap-1 text-[15px] font-semibold">วิทยาเขต</span>
+                    <span
+                      class="inline-flex items-center gap-1 text-[15px] font-semibold"
+                      >วิทยาเขต</span
+                    >
                   </label>
                 </div>
                 <div>
-                  <span class="text-gray-900 min-w-0 whitespace-normal break-words hyphens-auto text-[14px]">
+                  <span
+                    class="text-gray-900 min-w-0 whitespace-normal break-words hyphens-auto text-[14px]"
+                  >
                     {{ safeText(detail.campus) }}
                   </span>
                 </div>
               </div>
 
-              <div v-if="sameGroupAsSelf" class="grid grid-cols-[210px_1fr] gap-6">
+              <div
+                v-if="showGroupDash"
+                class="grid grid-cols-[210px_1fr] gap-6"
+              >
                 <div class="md:text-left">
                   <label class="block text-gray-700">
-                    <span class="inline-flex items-center gap-1 text-[15px] font-semibold">กลุ่มสถาบัน</span>
+                    <span
+                      class="inline-flex items-center gap-1 text-[15px] font-semibold"
+                    >
+                      กลุ่มสถาบัน
+                    </span>
                   </label>
                 </div>
                 <div><span class="text-gray-900 text-[14px]">-</span></div>
               </div>
 
-              <div v-else-if="hasGroup" class="mb-6 flex flex-col gap-4">
+              <div v-else-if="showGroupTable" class="mb-6 flex flex-col gap-4">
                 <div>
                   <label class="block text-gray-700 mb-2">
-                    <span class="flex items-center gap-1 text-[15px] font-semibold">กลุ่มสถาบัน</span>
+                    <span
+                      class="flex items-center gap-1 text-[15px] font-semibold"
+                    >
+                      กลุ่มสถาบัน
+                    </span>
                   </label>
                 </div>
-                <div>
-                  <div class="relative overflow-x-auto shadow-md sm:rounded-lg"
-                       :class="(groupColleges?.length ?? 0) > 3 ? 'overflow-y-auto max-h-[calc(3*3rem+3rem)]' : ''">
-                    <table class="w-full table-fixed text-sm text-left rtl:text-right text-gray-500">
-                      <thead class="font-medium text-gray-700 uppercase bg-[#E2EDFC] sticky top-0 z-10">
-                        <tr>
-                          <th scope="col" class="px-6 py-3">ลำดับ</th>
-                          <th scope="col" class="px-6 py-3">ชื่อสถาบัน</th>
-                          <th scope="col" class="px-6 py-3">วิทยาเขต</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr v-for="(g, idx) in groupColleges" :key="g.id || idx"
-                            class="border-b border-gray-200 odd:bg-white even:bg-gray-50"
-                            :class="Number(g.id) === Number(detail.id) ? 'bg-blue-50' : ''">
-                          <td class="px-6 py-4">{{ idx + 1 }}</td>
-                          <th scope="row" class="px-6 py-4 text-gray-900 min-w-0 whitespace-normal break-words">
-                            {{ g.name || '-' }}
-                          </th>
-                          <td class="px-6 py-4 min-w-0 whitespace-normal break-words">{{ g.campus || '-' }}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
+
+                <div
+                  class="relative overflow-x-auto shadow-md sm:rounded-lg"
+                  :class="
+                    groupCount > 3
+                      ? 'overflow-y-auto max-h-[calc(3*3rem+3rem)]'
+                      : ''
+                  "
+                >
+                  <table
+                    class="w-full table-fixed text-sm text-left rtl:text-right text-gray-500"
+                  >
+                    <thead
+                      class="font-medium text-gray-700 uppercase bg-[#E2EDFC] sticky top-0 z-10"
+                    >
+                      <tr>
+                        <th scope="col" class="px-6 py-3">ลำดับ</th>
+                        <th scope="col" class="px-6 py-3">ชื่อสถาบัน</th>
+                        <th scope="col" class="px-6 py-3">วิทยาเขต</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr
+                        v-for="(g, idx) in groupColleges"
+                        :key="g.id || idx"
+                        class="border-b border-gray-200 odd:bg-white even:bg-gray-50"
+                        :class="
+                          Number(g.id) === Number(detail.id) ? 'bg-blue-50' : ''
+                        "
+                      >
+                        <td class="px-6 py-4">{{ idx + 1 }}</td>
+                        <th
+                          scope="row"
+                          class="px-6 py-4 text-gray-900 min-w-0 whitespace-normal break-words"
+                        >
+                          {{ g.name || "-" }}
+                        </th>
+                        <td
+                          class="px-6 py-4 min-w-0 whitespace-normal break-words"
+                        >
+                          {{ g.campus || "-" }}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
               <div class="grid grid-cols-[210px_1fr] gap-6">
                 <div class="md:text-left">
                   <label class="block text-gray-700">
-                    <span class="inline-flex items-center gap-1 text-[15px] font-semibold">ประเทศ</span>
+                    <span
+                      class="inline-flex items-center gap-1 text-[15px] font-semibold"
+                      >ประเทศ</span
+                    >
                   </label>
                 </div>
                 <div>
-                  <span class="text-gray-900 text-[14px]">{{ safeText(countryDisplay) }}</span>
+                  <span class="text-gray-900 text-[14px]">{{
+                    safeText(countryDisplay)
+                  }}</span>
                 </div>
               </div>
 
               <div class="grid grid-cols-[210px_minmax(0,1fr)] gap-6">
                 <div class="md:text-left">
                   <label class="block text-gray-700">
-                    <span class="inline-flex items-center gap-1 text-[15px] font-semibold">จังหวัด</span>
+                    <span
+                      class="inline-flex items-center gap-1 text-[15px] font-semibold"
+                      >จังหวัด</span
+                    >
                   </label>
                 </div>
                 <div class="min-w-0">
-                  <span class="text-gray-900 text-[14px]">{{ safeText(provinceDisplay) }}</span>
+                  <span class="text-gray-900 text-[14px]">{{
+                    safeText(provinceDisplay)
+                  }}</span>
                 </div>
               </div>
 
               <div class="grid grid-cols-[210px_1fr] gap-6">
                 <div class="md:text-left">
                   <label class="block text-gray-700">
-                    <span class="inline-flex items-center gap-1 text-[15px] font-semibold">จำนวนหลักสูตร</span>
+                    <span
+                      class="inline-flex items-center gap-1 text-[15px] font-semibold"
+                      >จำนวนหลักสูตร</span
+                    >
                   </label>
                 </div>
                 <div>
-                  <span class="text-gray-900 text-[14px]">{{ safeText(detail.curriculumCount) }} หลักสูตร</span>
+                  <span class="text-gray-900 text-[14px]"
+                    >{{ safeText(detail.curriculumCount) }} หลักสูตร</span
+                  >
                 </div>
               </div>
 
               <div class="grid grid-cols-[210px_1fr] gap-6">
                 <div class="md:text-left">
                   <label class="block text-gray-700">
-                    <span class="inline-flex items-center gap-1 text-[15px] font-semibold">สถานะการใช้งาน</span>
+                    <span
+                      class="inline-flex items-center gap-1 text-[15px] font-semibold"
+                      >สถานะการใช้งาน</span
+                    >
                   </label>
                 </div>
                 <div>
-                  <span class="text-xs font-medium px-2.5 py-0.5 rounded-full"
-                        :class="Number(detail.active) === 1 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
-                    {{ Number(detail.active) === 1 ? 'ใช้งาน' : 'ไม่ใช้งาน' }}
+                  <span
+                    class="text-xs font-medium px-2.5 py-0.5 rounded-full"
+                    :class="
+                      Number(detail.active) === 1
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                    "
+                  >
+                    {{ Number(detail.active) === 1 ? "ใช้งาน" : "ไม่ใช้งาน" }}
                   </span>
                 </div>
               </div>
@@ -189,13 +280,19 @@
 
 <script setup>
 import { reactive, ref, computed, watch, onMounted, toRaw } from "vue";
-import { getCollegesById, countCurriculum, getCollegesGrouped } from "@/services/apiService";
+import {
+  getCollegesById,
+  countCurriculum,
+  getCollegesGrouped,
+} from "@/services/apiService";
 import EditCollegeModal from "./EditCollegeModal.vue";
 import { useLookups } from "@/composables/useLookups";
 
 /* ===== Lookups (ประเทศ/จังหวัด) ===== */
 const { ensureLoaded, displayCountry, displayProvince } = useLookups();
-onMounted(() => { ensureLoaded(); });
+onMounted(() => {
+  ensureLoaded();
+});
 
 defineOptions({ inheritAttrs: false });
 
@@ -217,7 +314,7 @@ let reqId = 0;
 const isLoading = ref(false);
 const loadError = ref("");
 const groupColleges = ref([]);
-
+const groupHeader = ref({ id: null, name: "" });
 const detail = reactive({
   id: null,
   name: "",
@@ -249,25 +346,56 @@ function closeEditModal() {
 }
 
 /* ===== Display via lookups ===== */
-const countryDisplay  = computed(() => displayCountry(detail.countryName || detail.country || detail.country_id, "-"));
-const provinceDisplay = computed(() => displayProvince(detail.provinceName || detail.province || detail.province_id, "-"));
+const countryDisplay = computed(() =>
+  displayCountry(detail.countryName || detail.country || detail.country_id, "-")
+);
+const provinceDisplay = computed(() =>
+  displayProvince(
+    detail.provinceName || detail.province || detail.province_id,
+    "-"
+  )
+);
 
 const sameGroupAsSelf = computed(() => {
-  const id  = detail?.id != null ? String(detail.id) : "";
-  const gid = detail?.institute_group != null ? String(detail.institute_group) : "";
+  const id = detail?.id != null ? String(detail.id) : "";
+  const gid =
+    detail?.institute_group != null ? String(detail.institute_group) : "";
   return gid !== "" && id !== "" && gid === id;
 });
-const hasGroup = computed(() => Array.isArray(groupColleges.value) && groupColleges.value.length > 0);
+const hasGroup = computed(() => toIntOrNull(detail.institute_group) != null);
+const groupCount = computed(() =>
+  Array.isArray(groupColleges.value) ? groupColleges.value.length : 0
+);
+const showGroupTable = computed(() => hasGroup.value && groupCount.value > 1);
+const showGroupDash = computed(() => hasGroup.value && groupCount.value === 1);
 
 /* ===== Utils ===== */
-const isFilled = (v) => v !== null && v !== undefined && String(v).trim() !== "";
+const isFilled = (v) =>
+  v !== null && v !== undefined && String(v).trim() !== "";
 const pickFirst = (...vals) => vals.find(isFilled);
-const toIntOrNull = (v) => { const n = Number(v); return Number.isFinite(n) ? n : null; };
+const toIntOrNull = (v) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+};
 
 function prefillFromInitial() {
   if (!props.initialDetail) return;
   const src = props.initialDetail;
-  const fields = ["id","name","campus","country","province","province_name","countryName","provinceName","curriculumCount","active","institute_group","institute_group_name","group"];
+  const fields = [
+    "id",
+    "name",
+    "campus",
+    "country",
+    "province",
+    "province_name",
+    "countryName",
+    "provinceName",
+    "curriculumCount",
+    "active",
+    "institute_group",
+    "institute_group_name",
+    "group",
+  ];
   for (const k of fields) {
     const v = src?.[k];
     if (v !== undefined && v !== null) detail[k] = v;
@@ -299,8 +427,17 @@ async function fetchDetail() {
     detail.provinceName = data.provinceName ?? "";
     detail.active = Number(data.active ?? 0) === 1 ? 1 : 0;
 
-    const rawGroupId = pickFirst(data.institute_group_id, data.institute_group, data.group_id, data.group?.id);
-    const rawGroupName = pickFirst(data.institute_group_name, data.group_name, data.group?.name);
+    const rawGroupId = pickFirst(
+      data.institute_group_id,
+      data.institute_group,
+      data.group_id,
+      data.group?.id
+    );
+    const rawGroupName = pickFirst(
+      data.institute_group_name,
+      data.group_name,
+      data.group?.name
+    );
     detail.institute_group = isFilled(rawGroupId) ? String(rawGroupId) : null;
     if (rawGroupName) detail.institute_group_name = rawGroupName;
 
@@ -321,15 +458,21 @@ async function fetchDetail() {
           const cnt = Number(cur.curriculum_count ?? cur.count ?? 0);
           if (Number.isFinite(key)) map[key] = Number.isFinite(cnt) ? cnt : 0;
         }
-        detail.curriculumCount = map[Number(detail.id)] ?? detail.curriculumCount ?? 0;
+        detail.curriculumCount =
+          map[Number(detail.id)] ?? detail.curriculumCount ?? 0;
 
         // อัปเดตจำนวนในรายการกลุ่ม (ถ้ามี)
-        groupColleges.value = groupColleges.value.map(r => ({
+        groupColleges.value = groupColleges.value.map((r) => ({
           ...r,
-          curriculumCount: r.id != null ? (map[r.id] ?? r.curriculumCount ?? 0) : (r.curriculumCount ?? 0),
+          curriculumCount:
+            r.id != null
+              ? map[r.id] ?? r.curriculumCount ?? 0
+              : r.curriculumCount ?? 0,
         }));
       })
-      .catch(() => {/* เงียบไว้ */});
+      .catch(() => {
+        /* เงียบไว้ */
+      });
 
     // 3.2 โหลดสมาชิกกลุ่ม
     if (groupIdNum) {
@@ -342,22 +485,41 @@ async function fetchDetail() {
             groupRes?.data?.group?.name,
             groupRes?.data?.name
           );
+
+          // ตั้งชื่อ/หัวกลุ่ม
           if (!detail.institute_group_name && inferredGroupName) {
             detail.institute_group_name = inferredGroupName;
           }
+          groupHeader.value = {
+            id: groupIdNum,
+            name:
+              detail.institute_group_name ||
+              inferredGroupName ||
+              `กลุ่ม ${groupIdNum}`,
+          };
 
+          // ---- Normalize rows จากหลายรูปแบบ payload ----
           let rawRows =
             (Array.isArray(groupRes?.data?.data) && groupRes.data.data) ||
             (Array.isArray(groupRes?.data?.items) && groupRes.data.items) ||
             (Array.isArray(groupRes?.data?.rows) && groupRes.data.rows) ||
-            (Array.isArray(groupRes?.data?.colleges) && groupRes.data.colleges) ||
+            (Array.isArray(groupRes?.data?.colleges) &&
+              groupRes.data.colleges) ||
             (Array.isArray(groupRes?.data?.members) && groupRes.data.members) ||
-            (Array.isArray(groupRes?.data?.group?.colleges) && groupRes.data.group.colleges) ||
+            (Array.isArray(groupRes?.data?.group?.colleges) &&
+              groupRes.data.group.colleges) ||
             (Array.isArray(groupRes?.data) && groupRes.data) ||
             [];
 
           const normalized = rawRows.map((r) => {
-            const rid = toIntOrNull(pickFirst(r.institute_group_id, r.institute_group, r.group_id, r.group?.id));
+            const rid = toIntOrNull(
+              pickFirst(
+                r.institute_group_id,
+                r.institute_group,
+                r.group_id,
+                r.group?.id
+              )
+            );
             const cid = toIntOrNull(pickFirst(r.id, r.college_id, r.collegeId));
             return {
               id: cid,
@@ -367,17 +529,53 @@ async function fetchDetail() {
             };
           });
 
-          const hasRid = normalized.some((x) => x.rGroupId != null);
-          const matched = hasRid ? normalized.filter((x) => x.rGroupId === groupIdNum) : normalized;
+          // กรองให้เหลือเฉพาะสถาบันที่อยู่ในกลุ่มเดียวกัน
+          let matched = normalized.filter((x) => x.rGroupId === groupIdNum);
 
+          // ✅ อัด "สถาบันปัจจุบัน" เข้าไปเสมอ (กรณี API ไม่ส่งมา)
+          const selfId = toIntOrNull(detail.id);
+          if (selfId != null && !matched.some((x) => Number(x.id) === selfId)) {
+            matched.unshift({
+              id: selfId,
+              name: detail.name || "",
+              campus: detail.campus || "",
+              rGroupId: groupIdNum,
+            });
+          }
+
+          // กำจัดรายการซ้ำ (id ซ้ำ)
+          const seen = new Set();
+          matched = matched.filter((r) => {
+            const key = Number(r.id);
+            if (!Number.isFinite(key)) return false;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+
+          // map ใส่ค่า institute_group ไว้ใช้ใน template
           groupColleges.value = matched.map((r) => ({
             id: r.id ?? null,
             name: r.name ?? "",
             campus: r.campus ?? "",
-            institute_group: String(groupIdNum ?? ""),
+            institute_group: String(groupIdNum),
           }));
         })
-        .catch(() => {/* เงียบไว้ */});
+        .catch(() => {
+          // ถ้าเรียกไม่สำเร็จ ให้อย่างน้อยมีตัวเอง 1 รายการ → UI จะแสดง '-'
+          const selfId = toIntOrNull(detail.id);
+          groupColleges.value =
+            selfId != null
+              ? [
+                  {
+                    id: selfId,
+                    name: detail.name || "",
+                    campus: detail.campus || "",
+                    institute_group: String(groupIdNum),
+                  },
+                ]
+              : [];
+        });
     } else {
       groupColleges.value = [];
     }

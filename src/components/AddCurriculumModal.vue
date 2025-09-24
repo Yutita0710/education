@@ -7,24 +7,30 @@
     >
       <!-- modal wrapper -->
       <div
-        class="bg-white rounded-2xl shadow-xl w-full max-w-4xl relative flex flex-col max-h-[80vh]"
+        class="bg-white rounded-2xl shadow-xl w-full max-w-4xl mx-4 sm:mx-6 relative flex flex-col overflow-hidden max-h-[85vh] sm:max-h-[80vh]"
         @click.stop
+        role="dialog"
+        aria-modal="true"
       >
-        <!-- HEADER: ติดขอบบนของโมดัล และไม่เลื่อน -->
+        <!-- HEADER: ติดบนสุดและไม่เลื่อน -->
         <div
-          class="flex items-center justify-center bg-white rounded-2xl px-6 py-3 relative"
+          class="sticky top-0 z-20 flex items-center justify-center bg-white px-4 sm:px-6 py-3 border-b"
         >
-          <h1 class="text-2xl font-bold text-gray-800">เพิ่มข้อมูลหลักสูตร</h1>
+          <h1 class="text-lg sm:text-2xl font-bold text-gray-800">
+            เพิ่มข้อมูลหลักสูตร
+          </h1>
+
           <button
             @click="closeModal"
-            class="absolute right-6 text-gray-500 hover:text-gray-700"
+            class="absolute right-3 sm:right-6 text-gray-500 hover:text-gray-700"
             aria-label="Close modal"
+            type="button"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
               fill="currentColor"
-              class="size-8"
+              class="w-7 h-7 sm:w-8 sm:h-8"
             >
               <path
                 fill-rule="evenodd"
@@ -35,10 +41,13 @@
           </button>
         </div>
 
-        <!-- BODY: ส่วนที่เลื่อน -->
-        <div class="p-6 overflow-y-auto max-h-[90vh]">
-          <!-- วางฟอร์มเดิมทั้งหมดของคุณในนี้ -->
+        <!-- BODY: เลื่อนเฉพาะส่วนเนื้อหา -->
+        <div
+          class="flex-1 overflow-y-auto overscroll-contain px-4 sm:px-6 py-4"
+        >
+          <!-- วางฟอร์มเดิมทั้งหมดของคุณไว้ด้านล่างได้เลย -->
           <form @submit.prevent="saveCurriculum" class="space-y-4">
+            <!-- … ฟิลด์ของคุณตามเดิม … -->
             <div class="mb-4 relative flex flex-col gap-2">
               <div class="flex items-center">
                 <input
@@ -247,7 +256,7 @@
                 </div>
               </div>
 
-              <ul class="flex flex-row gap-1 w-full">
+              <ul class="flex flex-col md:flex-row gap-1 w-full">
                 <li v-for="opt in typeOptions" :key="opt.id" class="w-full">
                   <label
                     :for="`type-${opt.id}`"
@@ -457,57 +466,22 @@
               </div>
             </div>
 
-            <!-- Buttons -->
+            <!-- ปุ่ม -->
             <div
               class="flex justify-center gap-3 pt-6 border-t border-gray-200"
             >
               <button
                 type="submit"
                 :disabled="isLoading"
-                class="bg-[#0085DB] hover:bg-[#0085DB] text-white px-4 py-2 rounded-full font-medium shadow hover:shadow-md transform hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center"
+                class="bg-[#0085DB] hover:bg-[#0085DB] text-white px-4 py-2 rounded-full font-medium shadow hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
               >
-                <span v-if="!isLoading" class="flex items-center">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    class="size-6 mr-2"
-                  >
-                    <path
-                      fill-rule="evenodd"
-                      d="M5.478 5.559A1.5 1.5 0 0 1 6.912 4.5H9A.75.75 0 0 0 9 3H6.912a3 3 0 0 0-2.868 2.118l-2.411 7.838a3 3 0 0 0-.133.882V18a3 3 0 0 0 3 3h15a3 3 0 0 0 3-3v-4.162c0-.299-.045-.596-.133-.882l-2.412-7.838A3 3 0 0 0 17.088 3H15a.75.75 0 0 0 0 1.5h2.088a1.5 1.5 0 0 1 1.434 1.059l2.213 7.191H17.89a3 3 0 0 0-2.684 1.658l-.256.513a1.5 1.5 0 0 1-1.342.829h-3.218a1.5 1.5 0 0 1-1.342-.83l-.256-.512a3 3 0 0 0-2.684-1.658H3.265l2.213-7.191Z"
-                      clip-rule="evenodd"
-                    />
-                    <path
-                      fill-rule="evenodd"
-                      d="M12 2.25a.75.75 0 0 1 .75.75v6.44l1.72-1.72a.75.75 0 1 1 1.06 1.06l-3 3a.75.75 0 0 1-1.06 0l-3-3a.75.75 0 0 1 1.06-1.06l1.72 1.72V3a.75.75 0 0 1 .75-.75Z"
-                      clip-rule="evenodd"
-                    />
-                  </svg>
-
-                  บันทึก
-                </span>
-                <span v-else class="flex items-center">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    class="size-6 mr-2"
-                  >
-                    <path
-                      fill-rule="evenodd"
-                      d="M4.755 10.059a7.5 7.5 0 0 1 12.548-3.364l1.903 1.903h-3.183a.75.75 0 1 0 0 1.5h4.992a.75.75 0 0 0 .75-.75V4.356a.75.75 0 0 0-1.5 0v3.18l-1.9-1.9A9 9 0 0 0 3.306 9.67a.75.75 0 1 0 1.45.388Zm15.408 3.352a.75.75 0 0 0-.919.53 7.5 7.5 0 0 1-12.548 3.364l-1.902-1.903h3.183a.75.75 0 0 0 0-1.5H2.984a.75.75 0 0 0-.75.75v4.992a.75.75 0 0 0 1.5 0v-3.18l1.9 1.9a9 9 0 0 0 15.059-4.035.75.75 0 0 0-.53-.918Z"
-                      clip-rule="evenodd"
-                    />
-                  </svg>
-
-                  บันทึก...
-                </span>
+                <!-- … ไอคอน + ข้อความ … -->
+                บันทึก
               </button>
               <button
                 type="button"
                 @click="closeModal"
-                class="bg-[#F95668] hover:bg-[#F95668]/80 text-white px-4 py-2 rounded-full font-medium shadow hover:shadow-md transform hover:-translate-y-0.5 transition-all duration-200 flex items-center"
+                class="bg-[#F95668] hover:bg-[#F95668]/80 text-white px-4 py-2 rounded-full font-medium shadow hover:shadow-md transition-all duration-200 flex items-center"
               >
                 ยกเลิก
               </button>
@@ -573,6 +547,7 @@ import {
 
 import DetailCurriculumModal from "./DetailCurriculumModal.vue";
 import EditCurriculumModal from "./EditCurriculumModal.vue";
+import { errorMessages } from "vue/compiler-sfc";
 
 /* =========================
  * 2) Props & Emits
@@ -1050,8 +1025,20 @@ function validateBeforeSubmit({
   meetingNoTrimmed,
   startStr,
   endStr,
-  meetingDateStr,
 }) {
+  if (isSpecific.value) {
+    if (!form.specific_no)
+      return {
+        ok: false,
+        msg: "กรุณากรอกเลขบัตรประชาชน/เลขประจำตัวคนต่างด้าว",
+      };
+    const digits = (form.specific_no || "").replace(/\D/g, "");
+    if (!(digits.length === 13 || digits.length === 14))
+      return {
+        ok: false,
+        msg: "กรอกเลขประจำตัวให้ครบถ้วนตามรูปแบบที่กำหนด (13 หรือ 14 หลัก)",
+      };
+  }
   if (!form.college_id) return { ok: false, msg: "กรุณาเลือกชื่อสถาบัน" };
   if (!nameTrimmed) return { ok: false, msg: "กรุณาเลือกชื่อหลักสูตร" };
 
@@ -1079,15 +1066,6 @@ function validateBeforeSubmit({
     return { ok: false, msg: "ปีที่สิ้นสุดไม่ถูกต้อง" };
   if (endStr && Number(endStr) < Number(startStr))
     return { ok: false, msg: "ปีที่สิ้นสุดต้องไม่น้อยกว่าปีที่เริ่มต้น" };
-
-  if (isSpecific.value) {
-    const digits = (form.specific_no || "").replace(/\D/g, "");
-    if (!(digits.length === 13 || digits.length === 14))
-      return {
-        ok: false,
-        msg: "รูปแบบเลขสมาชิกไม่ถูกต้อง (ต้อง 13 หรือ 14 หลัก)",
-      };
-  }
 
   return { ok: true };
 }
@@ -1144,6 +1122,31 @@ async function saveCurriculum() {
 
     const res = await addEducation(submitData);
 
+    // ⬇️ เพิ่มตรงนี้
+    const embeddedCode = Number(res?.data?.statusCode ?? 0);
+    if (embeddedCode >= 400) {
+      const m = res?.data?.message;
+      const finalMsg = Array.isArray(m)
+        ? m.join("\n")
+        : typeof m === "object" && m
+        ? JSON.stringify(m)
+        : String(m || "เกิดข้อผิดพลาด");
+
+      await Swal.fire({
+        icon: "error",
+        title: "บันทึกไม่สำเร็จ",
+        text: finalMsg,
+        confirmButtonColor: "#EF4444",
+      });
+
+      if (/เฉพาะสมาชิก|specific/i.test(finalMsg)) {
+        await nextTick();
+        document.querySelector("#member-only-input input")?.focus();
+      }
+      return;
+    }
+    // ⬆️ จบ guard; ด้านล่างค่อยทำ success ต่อไป
+
     // ดึงรายละเอียดล่าสุด
     const created = res?.data?.data ?? res?.data?.item ?? res?.data ?? {};
     const createdId =
@@ -1172,32 +1175,23 @@ async function saveCurriculum() {
     await nextTick();
     showDetailModal.value = true;
   } catch (err) {
-    console.error("saveCurriculum error:", err?.response?.data || err);
-    const status =
-      err?.response?.status ?? err?.response?.data?.statusCode ?? null;
-    const rawMessage = err?.response?.data?.message ?? err?.message;
-    const messageText = Array.isArray(rawMessage)
-      ? rawMessage.join("\n")
-      : String(rawMessage || "");
-    if (status === 400 && /already exists/i.test(messageText)) {
-      await Swal.fire({
-        icon: "warning",
-        title: "ข้อมูลซ้ำ",
-        text: "มีหลักสูตรชื่อนี้อยู่แล้ว",
-      });
-    } else if (status === 400) {
-      await Swal.fire({
-        icon: "warning",
-        title: "บันทึกไม่สำเร็จ",
-        text: "กรุณาตรวจสอบข้อมูล",
-      });
-    } else {
-      await Swal.fire({
-        icon: "error",
-        title: "เกิดข้อผิดพลาด",
-        text: "ไม่สามารถบันทึกข้อมูลได้",
-      });
-    }
+    // ดึงข้อความจาก backend ให้ครอบคลุมหลายรูปแบบ
+    const backendMsg = (() => {
+      const m = err?.response?.data?.message;
+      if (Array.isArray(m)) return m.join("\n"); // เผื่อเป็น array ของข้อความ
+      if (typeof m === "object" && m) return JSON.stringify(m);
+      return String(m || "");
+    })();
+
+    // fallback ถ้าไม่มี message ใน data
+    const finalMsg = backendMsg || String(err?.message || "เกิดข้อผิดพลาด");
+
+    await Swal.fire({
+      icon: "error",
+      title: "บันทึกไม่สำเร็จ",
+      text: finalMsg, // << จะแสดง: "มีหลักสูตรเฉพาะสมาชิก 6604101425284 ในระบบแล้ว"
+      confirmButtonColor: "#EF4444",
+    });
   } finally {
     isLoading.value = false;
   }

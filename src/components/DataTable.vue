@@ -15,72 +15,68 @@
     <div
       class="overflow-y-auto md:overflow-y-hidden border border-gray-300 rounded-lg"
     >
-      <table class="w-full border-collapse text-[14px]">
+      <table class="w-full min-w-[1000px] border-separate border-spacing-0 table-fixed text-[14px]">
+
         <!-- 👈 fix: บังคับ 14px ทั้งตาราง -->
         <thead>
-          <tr class="bg-[#E2EDFC]">
-            <th
-              class="border px-2 py-[0.7rem] whitespace-nowrap w-[50px] text-[14px] font-bold"
-            >
-              ลำดับ
-            </th>
+  <tr class="bg-[#E2EDFC]">
+    <th
+      class="sticky top-0 z-30 bg-[#E2EDFC] border px-2 py-[0.7rem] whitespace-nowrap w-[50px] text-[14px] font-bold
+             left-0"
+    >
+      ลำดับ
+    </th>
 
-            <!-- ชื่อสถาบัน -->
-            <th
-              class="border px-2 py-[0.7rem] whitespace-nowrap w-[200px] text-[14px] font-bold"
-            >
-              ชื่อสถาบัน
-            </th>
+    <th
+      class="sticky top-0 z-20 bg-[#E2EDFC] border px-2 py-[0.7rem] whitespace-nowrap w-[200px] text-[14px] font-bold"
+    >
+      ชื่อสถาบัน
+    </th>
 
-            <!-- ชื่อหลักสูตร -->
-            <th
-              class="border px-2 py-[0.7rem] whitespace-nowrap w-[250px] text-[14px] font-bold"
-            >
-              ชื่อหลักสูตร
-            </th>
+    <th
+      class="sticky top-0 z-20 bg-[#E2EDFC] border px-2 py-[0.7rem] whitespace-nowrap w-[250px] text-[14px] font-bold"
+    >
+      ชื่อหลักสูตร
+    </th>
 
-            <!-- หลักสูตร (คำอธิบาย) -->
-            <th
-              class="border px-2 py-[0.7rem] whitespace-nowrap w-[200px] text-[14px] font-bold"
-            >
-              หลักสูตร
-            </th>
+    <th
+      class="sticky top-0 z-20 bg-[#E2EDFC] border px-2 py-[0.7rem] whitespace-nowrap w-[200px] text-[14px] font-bold"
+    >
+      หลักสูตร
+    </th>
 
-            <!-- ระดับการศึกษา -->
-            <th
-              class="border px-2 py-[0.7rem] whitespace-nowrap w-[100px] text-[14px] font-bold"
-            >
-              ระดับการศึกษา
-            </th>
+    <th
+      class="sticky top-0 z-20 bg-[#E2EDFC] border px-2 py-[0.7rem] whitespace-nowrap w-[100px] text-[14px] font-bold"
+    >
+      ระดับการศึกษา
+    </th>
 
-            <!-- หลักสูตรสำหรับ -->
-            <th
-              class="border px-2 py-[0.7rem] whitespace-nowrap w-[100px] text-[14px] font-bold"
-            >
-              หลักสูตรสำหรับ
-            </th>
+    <th
+      class="sticky top-0 z-20 bg-[#E2EDFC] border px-2 py-[0.7rem] whitespace-nowrap w-[100px] text-[14px] font-bold"
+    >
+      หลักสูตรสำหรับ
+    </th>
 
-            <!-- ปีที่เริ่มต้น -->
-            <th
-              class="border px-2 py-[0.7rem] whitespace-nowrap w-[100px] text-[14px] font-bold"
-            >
-              ปีที่เริ่มต้น
-            </th>
+    <th
+      class="sticky top-0 z-20 bg-[#E2EDFC] border px-2 py-[0.7rem] whitespace-nowrap w-[100px] text-[14px] font-bold"
+    >
+      ปีที่เริ่มต้น
+    </th>
 
-            <!-- ปีที่สิ้นสุด -->
-            <th
-              class="border px-2 py-[0.7rem] whitespace-nowrap w-[100px] text-[14px] font-bold"
-            >
-              ปีที่สิ้นสุด
-            </th>
+    <th
+      class="sticky top-0 z-20 bg-[#E2EDFC] border px-2 py-[0.7rem] whitespace-nowrap w-[100px] text-[14px] font-bold"
+    >
+      ปีที่สิ้นสุด
+    </th>
 
-            <th
-              class="border px-2 py-[0.7rem] whitespace-nowrap w-[100px] text-[14px] font-bold"
-            >
-              รายละเอียด
-            </th>
-          </tr>
-        </thead>
+    <th
+      class="sticky top-0 z-20 bg-[#E2EDFC] border px-2 py-[0.7rem] whitespace-nowrap w-[100px] text-[14px] font-bold"
+    >
+      รายละเอียด
+    </th>
+  </tr>
+</thead>
+
 
         <tbody v-if="Array.isArray(rows) && rows.length > 0">
           <tr

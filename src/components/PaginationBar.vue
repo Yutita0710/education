@@ -1,36 +1,99 @@
 <template>
   <div
-    class="flex flex-col sm:flex-row sm:items-center sm:justify-between border-t border-gray-200 bg-white px-3 sm:px-4 py-2.5 sm:py-3 mt-3 gap-2 sm:gap-3 mt-5"
+    class="flex flex-col text-gray-600 sm:flex-row sm:items-center sm:justify-between border-t border-gray-200 bg-white px-3 sm:px-4 py-2.5 sm:py-3 mt-3 gap-2 sm:gap-3 mt-5"
   >
-    <!-- Summary -->
+    <!-- Summary (mobile) -->
+    <div v-if="showSummary" class="md:hidden w-full">
+      <div class="grid grid-cols-2 gap-2">
+        <!-- รวม + Per page -->
+        <div class="col-span-2 flex items-center justify-center gap-2">
+          <div class="text-xs">
+            รวม: <span class="font-semibold">{{ totalDisplay }}</span> รายการ
+          </div>
+
+          <div class="flex items-center gap-2">
+            <label class="sr-only" for="per-page-mobile">Items per page</label>
+            <div class="relative">
+              <select
+                id="per-page-mobile"
+                :value="perPageSafe"
+                @change="onLimitChange"
+                class="appearance-none border rounded-lg pl-3 pr-8 py-1.5 text-xs bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition min-w-[88px]"
+              >
+                <option :value="10">10</option>
+                <option :value="20">20</option>
+                <option :value="50">50</option>
+                <option :value="100">100</option>
+              </select>
+              <span
+                class="pointer-events-none absolute right-2 inset-y-0 flex items-center"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-4 w-4 text-gray-500"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary (desktop ≥ md) -->
     <div
       v-if="showSummary"
-      class="flex flex-col sm:flex-row items-center gap-2 text-xs sm:text-sm text-gray-700 text-center sm:text-left"
+      class="hidden md:flex items-center gap-3 text-sm"
     >
       <div>
         Showing
-        <span class="font-medium">{{ startDisplay }}</span>
+        <span class="font-semibold">{{ startDisplay }}</span>
         to
-        <!-- <span class="font-medium">{{ endIndex }}</span> -->
-        <span class="font-medium">{{ endDisplay }}</span>
+        <span class="font-semibold">{{ endDisplay }}</span>
         of
-        <span class="font-medium">{{ totalDisplay }}</span>
+        <span class="font-semibold">{{ totalDisplay }}</span>
         results
       </div>
 
-      <!-- ✅ Selector สำหรับ limit -->
-      <div class="flex items-center gap-1">
+      <div class="flex items-center gap-2">
         <span class="text-gray-500">Per page:</span>
-        <select
-          :value="perPageSafe"
-          @change="onLimitChange"
-          class="border rounded-md px-2 py-1 text-xs sm:text-sm"
-        >
-          <option :value="10">10</option>
-          <option :value="20">20</option>
-          <option :value="50">50</option>
-          <option :value="100">100</option>
-        </select>
+        <div class="relative">
+          <label class="sr-only" for="per-page-desktop">Items per page</label>
+          <select
+            id="per-page-desktop"
+            :value="perPageSafe"
+            @change="onLimitChange"
+            class="appearance-none border rounded-lg pl-3 pr-8 py-1.5 text-sm bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition min-w-[96px]"
+          >
+            <option :value="10">10</option>
+            <option :value="20">20</option>
+            <option :value="50">50</option>
+            <option :value="100">100</option>
+          </select>
+          <span
+            class="pointer-events-none absolute right-2 inset-y-0 flex items-center"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 text-gray-500"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </span>
+        </div>
       </div>
     </div>
 
@@ -145,8 +208,7 @@
 
 
 <script setup>
-import { useRoute, useRouter } from "vue-router";
-import { computed, watch, ref } from "vue";
+import { computed } from "vue";
 
 const props = defineProps({
   currentPage: { type: Number, required: true },
@@ -164,42 +226,8 @@ const emit = defineEmits([
   "update:perPage",
 ]);
 
-const route = useRoute();
-const router = useRouter();
-
 const ALLOWED_LIMITS = [10, 20, 50, 100];
 const DEFAULT_LIMIT = 10;
-
-
-function sanitizeLimit(x) {
-  const n = Number(x);
-  if (!Number.isFinite(n)) return DEFAULT_LIMIT;
-  if (ALLOWED_LIMITS.includes(n)) return n;
-  // clamp to nearest bound
-  if (n < ALLOWED_LIMITS[0]) return ALLOWED_LIMITS[0];
-  return ALLOWED_LIMITS[ALLOWED_LIMITS.length - 1]; // 100 สำหรับ 100000
-}
-
-function sanitizePage(p) {
-  const n = Number(p);
-  return Number.isFinite(n) && n >= 1 ? Math.floor(n) : 1;
-}
-
-watch(
-  () => route.query,
-  (q) => {
-    const safe = {
-      ...q,
-      limit: String(sanitizeLimit(q.limit)),
-      page: String(sanitizePage(q.page)),
-    };
-    // canonicalize URL ถ้าเปลี่ยน
-    if (safe.limit !== String(q.limit) || safe.page !== String(q.page)) {
-      router.replace({ query: safe });
-    }
-  },
-  { immediate: true }
-);
 
 const isFirst = computed(() => props.currentPage <= 1);
 const isLast = computed(() => props.currentPage >= totalPages.value);
@@ -226,8 +254,6 @@ const fmt = (n) => Number(n ?? 0).toLocaleString("th-TH-u-nu-latn");
 const totalDisplay = computed(() => fmt(props.total)); // ✅ FIX: ใช้ props.total
 const startDisplay = computed(() => fmt(startIndex.value + 1));
 const endDisplay = computed(() => fmt(endIndex.value));
-const totalPagesDisplay = computed(() => fmt(totalPages.value));
-// ✅ ใช้ innerCount ถ้าส่งมา, ไม่งั้น fallback = maxVisible - 2 (กันตำแหน่ง 1 และ last)
 const innerCountVal = computed(() => {
   const fallback = Math.max(1, props.maxVisible - 2);
   return Math.max(1, props.innerCount ?? fallback);
@@ -281,7 +307,7 @@ const innerPages = computed(() => {
 
 function change(page) {
   const clamped = Math.min(Math.max(1, page), totalPages.value);
-  if (clamped !== props.currentPage) {
+  if (clamped !== props.currentPage && totalPages.value >= 1) {
     emit("changePage", clamped); // สำหรับ @changePage
     emit("update:currentPage", clamped); // รองรับ v-model:currentPage
   }
@@ -309,11 +335,8 @@ function onLimitChange(e) {
   if (newPage > newTotalPages) newPage = newTotalPages;
   if (newPage < 1) newPage = 1;
 
-  // อัปเดต perPage และ page
-  // (ถ้าพาเรนต์ยิงโหลดเมื่อใดตัวหนึ่งเปลี่ยน แนะนำรวมเป็น handler เดียวฝั่งพาเรนต์)
   emit("update:perPage", newLimit);
-  emit("changePage", newPage);
-  emit("update:currentPage", newPage);
+  emit("changePage", newPage); // พาเรนต์จะ v-model currentPage เองตาม newPage
 }
 </script>
 

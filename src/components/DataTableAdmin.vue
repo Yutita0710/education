@@ -14,68 +14,47 @@
 
     <!-- ตาราง -->
     <div
-      class="overflow-y-auto md:overflow-y-hidden border border-gray-300 rounded-lg"
+      class="overflow-auto  md:overflow-y-hidden border border-gray-300 rounded-lg"
     >
-      <table class="w-full border-collapse table-fixed text-[14px]">
+      <table class="w-full min-w-[1000px] border-separate border-spacing-0 table-fixed text-[14px]">
+
         <thead>
-          <tr class="bg-[#E2EDFC]">
-            <th
-              class="border px-2 py-[0.7rem] whitespace-nowrap w-[50px] font-bold"
-            >
-              ลำดับ
-            </th>
-            <th
-              class="border px-2 py-[0.7rem] whitespace-nowrap w-[200px] font-bold"
-            >
-              ชื่อสถาบัน
-            </th>
-            <th
-              class="border px-2 py-[0.7rem] whitespace-nowrap w-[250px] font-bold"
-            >
-              ชื่อหลักสูตร
-            </th>
-            <th
-              class="border px-2 py-[0.7rem] whitespace-nowrap w-[200px] font-bold"
-            >
-              หลักสูตร
-            </th>
-            <th
-              class="border px-2 py-[0.7rem] whitespace-nowrap w-[100px] font-bold"
-            >
-              ระดับการศึกษา
-            </th>
-            <th
-              class="border px-2 py-[0.7rem] whitespace-nowrap w-[100px] font-bold"
-            >
-              หลักสูตรสำหรับ
-            </th>
-            <th
-              class="border px-2 py-[0.7rem] whitespace-nowrap w-[100px] font-bold"
-            >
-              ปีที่เริ่มต้น
-            </th>
-            <th
-              class="border px-2 py-[0.7rem] whitespace-nowrap w-[100px] font-bold"
-            >
-              ปีที่สิ้นสุด
-            </th>
-            <th
-              class="border px-2 py-[0.7rem] whitespace-nowrap w-[100px] font-bold"
-            >
-              รายละเอียด
-            </th>
-            <th
-              class="border px-2 py-[0.7rem] whitespace-nowrap w-[100px] font-bold"
-            >
-              สถานะ
-            </th>
-            <th
-              class="border px-2 py-[0.7rem] whitespace-nowrap w-[100px] font-bold"
-            >
-              จัดการ
-            </th>
-          </tr>
-        </thead>
+      <tr>
+        <th class="sticky top-0 z-20 bg-[#E2EDFC] border px-2 py-[0.7rem] whitespace-nowrap w-[50px]  font-bold">
+          ลำดับ
+        </th>
+        <th class="sticky top-0 z-20 bg-[#E2EDFC] border px-2 py-[0.7rem] whitespace-nowrap w-[200px] font-bold">
+          ชื่อสถาบัน
+        </th>
+        <th class="sticky top-0 z-20 bg-[#E2EDFC] border px-2 py-[0.7rem] whitespace-nowrap w-[250px] font-bold">
+          ชื่อหลักสูตร
+        </th>
+        <th class="sticky top-0 z-20 bg-[#E2EDFC] border px-2 py-[0.7rem] whitespace-nowrap w-[200px] font-bold">
+          หลักสูตร
+        </th>
+        <th class="sticky top-0 z-20 bg-[#E2EDFC] border px-2 py-[0.7rem] whitespace-nowrap w-[100px] font-bold">
+          ระดับการศึกษา
+        </th>
+        <th class="sticky top-0 z-20 bg-[#E2EDFC] border px-2 py-[0.7rem] whitespace-nowrap w-[100px] font-bold">
+          หลักสูตรสำหรับ
+        </th>
+        <th class="sticky top-0 z-20 bg-[#E2EDFC] border px-2 py-[0.7rem] whitespace-nowrap w-[100px] font-bold">
+          ปีที่เริ่มต้น
+        </th>
+        <th class="sticky top-0 z-20 bg-[#E2EDFC] border px-2 py-[0.7rem] whitespace-nowrap w-[100px] font-bold">
+          ปีที่สิ้นสุด
+        </th>
+        <th class="sticky top-0 z-20 bg-[#E2EDFC] border px-2 py-[0.7rem] whitespace-nowrap w-[100px] font-bold">
+          รายละเอียด
+        </th>
+        <th class="sticky top-0 z-20 bg-[#E2EDFC] border px-2 py-[0.7rem] whitespace-nowrap w-[100px] font-bold">
+          สถานะ
+        </th>
+        <th class="sticky top-0 z-20 bg-[#E2EDFC] border px-2 py-[0.7rem] whitespace-nowrap w-[100px] font-bold">
+          จัดการ
+        </th>
+      </tr>
+    </thead>
         <div v-if="!lookupReady" class="loading-overlay">
           <div class="loader">
             <div class="circle" tabindex="0"></div>

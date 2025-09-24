@@ -37,9 +37,7 @@
           v-model:perPage="pageSize"
           :total="total"
           :max-visible="5"
-          :loading="isLoading"
           @changePage="onPageChange"
-          @changePerPage="onPageSizeChange"
         />
       </div>
       <div
@@ -73,13 +71,15 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { getEducationPaginated } from '@/services/apiService'
-import PaginationBar from '@/components/PaginationBar.vue'
-import DataTable from '@/components/DataTable.vue'
-import SearchForm from '@/components/SearchForm.vue' /* หรือ SearchFormAdmin ถ้าใช้ตัวแอดมิน */
+import { ref, computed, onMounted, watch, nextTick } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { getEducationPaginated } from "@/services/apiService";
+import PaginationBar from "@/components/PaginationBar.vue";
+import DataTable from "@/components/DataTable.vue";
+import SearchForm from "@/components/SearchForm.vue"; /* หรือ SearchFormAdmin ถ้าใช้ตัวแอดมิน */
 
+// sync เมื่อ query เปลี่ยน (เช่น คลิกหน้า)
+let ignoreNextRouteSync = false;
 const route = useRoute();
 const router = useRouter();
 const searchFormRef = ref(null);
@@ -120,13 +120,14 @@ const error = ref(null);
 const hasInitialized = ref(false);
 const booting = ref(true);
 const wroteQuery = ref(false);
+const isPristineUrl = ref(Object.keys(route.query || {}).length === 0); // ยังไม่เคยมี action จากผู้ใช้
 
 // computed
 const total = computed(() => meta.value?.total || 0);
 const currentPage = computed(() => state.value.page);
 const pageSize = computed({
   get: () => state.value.limit,
-  set: (value) => handlePageSizeChange(value),
+  set: (value) => onPageSizeChange(value),
 });
 const hasData = computed(() => tableData.value.length > 0);
 
@@ -143,15 +144,51 @@ const searchFilters = computed(() => ({
   meeting_resolution: state.value.meeting_resolution,
 }));
 
+function writeUrl(query, mode = "replace") {
+  // เขียน URL **เฉพาะหลังจากมี action จากผู้ใช้แล้วเท่านั้น**
+  // (isPristineUrl จะถูกปิดใน handler ของผู้ใช้ด้านล่าง)
+  if (isPristineUrl.value) return;
+
+  const nav = { path: route.path, query };
+  if (mode === "push") router.push(nav);
+  else router.replace(nav);
+}
+
+function isDefaultLikeQuery(q = route.query) {
+  // ปรับตาม DEFAULT_STATE ของคุณ
+  const d = DEFAULT_STATE;
+  const qPage = String(q.page ?? "");
+  const qLimit = String(q.limit ?? "");
+  const onlyDefaultPageLimit =
+    (qPage === "" || qPage === String(d.page)) &&
+    (qLimit === "" || qLimit === String(d.limit));
+
+  // ไม่มีฟิลเตอร์อย่างอื่น
+  const keys = Object.keys(q).filter((k) => !["page", "limit"].includes(k));
+  const noOtherFilters = keys.length === 0;
+
+  return onlyDefaultPageLimit && noOtherFilters;
+}
+
+onMounted(async () => {
+  // 1) sync state จาก query (ถ้ามี)
+  syncStateFromQuery();
+
+  // 2) โหลดข้อมูลครั้งแรก
+  await fetchData();
+
+  // 3) ถ้า URL ตอนเข้ามามีแต่ค่า default/ว่าง → เคลียร์ทิ้ง
+  if (!isPristineUrl.value && isDefaultLikeQuery(route.query)) {
+    ignoreNextRouteSync = true;
+    await router.replace({ path: route.path, query: {} }).catch(() => {});
+  }
+
+  booting.value = false;
+});
+
 function normalizeQueryParam(value) {
   if (Array.isArray(value)) return value[0] ?? "";
   return value ?? "";
-}
-
-function validateAndParseInt(value, def, min = 1, max = Infinity) {
-  const n = parseInt(value, 10);
-  if (!Number.isFinite(n) || n < min || n > max) return def;
-  return n;
 }
 
 function validateString(value, allowed = null) {
@@ -225,8 +262,13 @@ function syncStateFromQuery() {
 
 function buildPagingQuery(page = state.value.page) {
   const q = buildQueryForUrl({ ...state.value });
-  q.page = String(page); // ใส่หน้า
-  if (!q.limit) q.limit = String(state.value.limit ?? DEFAULT_STATE.limit);
+
+  // ใส่ page/limit เฉพาะหลังมี user action แล้วเท่านั้น
+  if (!isPristineUrl.value) {
+    q.page = String(page);
+    if (!q.limit) q.limit = String(state.value.limit ?? DEFAULT_STATE.limit);
+  }
+
   return q;
 }
 
@@ -265,7 +307,7 @@ async function fetchData() {
     );
     if (!response?.data) throw new Error("ไม่ได้รับข้อมูลจากเซิร์ฟเวอร์");
     if (seq !== fetchSeq) return;
-// console.log("response.data", response.data);
+    // console.log("response.data", response.data);
     const { data: rows = [], meta: metaData = {} } = response.data || {};
     tableData.value = rows;
     meta.value = {
@@ -291,7 +333,7 @@ async function fetchData() {
     ) {
       await nextTick();
       state.value.page = meta.value.last_page;
-      router.replace({ path: route.path, query: buildPagingQuery(state.value.page) });
+      writeUrl(buildPagingQuery(state.value.page), "replace");
       return;
     }
   } catch (err) {
@@ -317,21 +359,24 @@ const refreshData = () => fetchData();
 const onPageChange = (page) => {
   if (booting.value || !hasInitialized.value || isLoading.value) return;
   if (page !== state.value.page && page >= 1 && page <= meta.value.last_page) {
+    isPristineUrl.value = false; // ✨ มี user action แล้ว
     wroteQuery.value = true;
     state.value.page = page;
-    router.push({ path: route.path, query: buildPagingQuery(page) });
+    writeUrl(buildPagingQuery(page), "push");
   }
 };
 
 function handlePageSizeChange(newSize) {
+  if (booting.value || !hasInitialized.value || isLoading.value) return;
   const size = Math.min(Math.max(newSize, MIN_PAGE_SIZE), MAX_PAGE_SIZE);
   if (size === state.value.limit) return;
+
+  isPristineUrl.value = false; // ✨ user action
   state.value.limit = size;
   state.value.page = 1;
   wroteQuery.value = true;
-  router.replace({ path: route.path, query: buildPagingQuery(1) });
+  writeUrl(buildPagingQuery(1), "replace");
 }
-
 const onPageSizeChange = (v) => {
   if (booting.value || !hasInitialized.value || isLoading.value) return;
   handlePageSizeChange(v);
@@ -339,15 +384,16 @@ const onPageSizeChange = (v) => {
 
 const handleSort = ({ column, order }) => {
   if (booting.value || !hasInitialized.value || isLoading.value) return;
+
   const nextOrder = (order ?? "ASC").toUpperCase();
   if (state.value.sort === column && state.value.order === nextOrder) return;
 
+  isPristineUrl.value = false; // ✨ user action
   state.value.sort = column;
   state.value.order = nextOrder;
   state.value.page = 1;
   wroteQuery.value = true;
-  const q = buildQueryForUrl(state.value);
-  router.replace({ path: route.path, query: q });
+  writeUrl(buildQueryForUrl(state.value), "replace");
 };
 
 function areFiltersMeaningfullyChanged(next, curr) {
@@ -368,8 +414,9 @@ function areFiltersMeaningfullyChanged(next, curr) {
 
 const handleSearch = (filters = {}) => {
   if (booting.value || !hasInitialized.value || isLoading.value) return;
+
   const next = {
-    ...state.value,
+    ...state.value /* merge filters ตามโค้ดเดิมของคุณ */,
     search: filters.search ?? state.value.search ?? "",
     type: filters.type ?? state.value.type ?? "",
     college_name:
@@ -386,15 +433,15 @@ const handleSearch = (filters = {}) => {
     meeting_resolution:
       filters.meeting_resolution ?? state.value.meeting_resolution ?? "",
   };
+
   const changed = areFiltersMeaningfullyChanged(next, state.value);
   if (!changed) return;
-  state.value = { ...next, page: 1 }; // ให้ UI sync กับสิ่งที่กรอก
-  wroteQuery.value = true;
-  // เขียนฟิลเตอร์ลง URL (page=1 จะไม่ใส่ page ก็ได้ แต่เราคง limit/sort ที่จำเป็น)
-  const q = buildQueryForUrl(state.value);
-  router.replace({ path: route.path, query: q });
-};
 
+  isPristineUrl.value = false; // ✨ user action
+  state.value = { ...next, page: 1 };
+  wroteQuery.value = true;
+  writeUrl(buildQueryForUrl(state.value), "replace");
+};
 // สร้าง query จาก state ปัจจุบัน (กรองค่าเริ่มต้น/ค่าว่างออก)
 function buildQueryForUrl(s = state.value) {
   const q = {};
@@ -428,24 +475,15 @@ function buildQueryForUrl(s = state.value) {
   return q;
 }
 
-// lifecycle
-onMounted(async () => {
-  syncStateFromQuery();
-  await fetchData();
-  booting.value = false;
-});
-
-// sync เมื่อ query เปลี่ยน (เช่น คลิกหน้า)
-let ignoreNextRouteSync = false;
-
 watch(
   () => route.query,
   async (n, o) => {
     if (ignoreNextRouteSync) {
-      ignoreNextRouteSync = false; // ข้ามซิงค์ครั้งเดียว
+      ignoreNextRouteSync = false;
       return;
     }
     if (JSON.stringify(n) === JSON.stringify(o)) return;
+
     syncStateFromQuery();
     await fetchData();
     if (booting.value) booting.value = false;
@@ -456,12 +494,23 @@ watch(
 const clearSearch = () => {
   searchFormRef.value?.reset();
   state.value = { ...DEFAULT_STATE };
+  wroteQuery.value = false;
 
-  // เคลียร์ URL โดยไม่ให้ watcher ยิง fetch ซ้ำ
+  // กลับสู่สภาพ "ยังไม่เคยมี action"
+  isPristineUrl.value = true;
+
+  // กัน watcher ยิงซ้ำ
   ignoreNextRouteSync = true;
+
+  // 1) สั่ง router เคลียร์ query
   router.replace({ path: route.path, query: {} }).catch(() => {});
 
-  // ยิงโหลดรอบเดียว
+  // 2) บังคับล้าง query ด้วย History API อีกชั้น (ไม่กระทบ router guard)
+  if (typeof window !== "undefined" && window.history?.replaceState) {
+    window.history.replaceState({}, "", route.path);
+  }
+
+  // ยิงโหลดรอบเดียว (ไม่เขียน URL เพราะ isPristineUrl = true)
   fetchData();
 };
 </script>
